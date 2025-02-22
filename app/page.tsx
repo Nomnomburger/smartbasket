@@ -8,24 +8,12 @@ import { Today } from "@/components/today"
 import { Points } from "@/components/points"
 import { ProductDetails } from "@/components/product-details"
 import { SignIn } from "@/components/sign-in"
-import testingData from "@/data/testingData.json"
-import { updateJsonFile } from "@/utils/updateJsonFile"
 import { useAuthState } from "react-firebase-hooks/auth"
-import { auth } from "@/lib/firebase"
+import { auth, getUserShoppingList, updateShoppingItem, type ShoppingItem } from "@/lib/firebase"
 import { signOut } from "firebase/auth"
 import { Loader2 } from "lucide-react"
 
 type ActiveView = "home" | "smartbasket" | "today" | "points" | "product"
-
-interface ShoppingItem {
-  id: string
-  itemName: string
-  checked: boolean
-  onSale: boolean
-  storeId: string
-  price: string
-  addedAt: string
-}
 
 export default function Page() {
   const [activeView, setActiveView] = useState<ActiveView>("home")
@@ -35,12 +23,18 @@ export default function Page() {
   const [user, loading, error] = useAuthState(auth)
 
   useEffect(() => {
-    const sortedItems = [...testingData.shoppingList].sort((a, b) => {
-      if (a.checked === b.checked) return 0
-      return a.checked ? 1 : -1
-    })
-    setShoppingItems(sortedItems)
-  }, [])
+    if (user) {
+      const unsubscribe = getUserShoppingList(user.uid, (items) => {
+        const sortedItems = items.sort((a, b) => {
+          if (a.checked === b.checked) return 0
+          return a.checked ? 1 : -1
+        })
+        setShoppingItems(sortedItems)
+      })
+
+      return () => unsubscribe()
+    }
+  }, [user])
 
   const navigateTo = (view: ActiveView, productId?: string) => {
     setActiveView(view)
@@ -63,16 +57,9 @@ export default function Page() {
   }
 
   const handleItemCheck = async (itemId: string, checked: boolean) => {
-    const updatedItems = shoppingItems
-      .map((item) => (item.id === itemId ? { ...item, checked } : item))
-      .sort((a, b) => {
-        if (a.checked === b.checked) return 0
-        return a.checked ? 1 : -1
-      })
-    setShoppingItems(updatedItems)
-
-    const updatedData = { ...testingData, shoppingList: updatedItems }
-    await updateJsonFile(updatedData)
+    if (user) {
+      await updateShoppingItem(user.uid, itemId, { checked })
+    }
   }
 
   const handleSignOut = async () => {

@@ -1,6 +1,6 @@
 import { initializeApp, getApps, getApp } from "firebase/app"
 import { getAuth, setPersistence, browserLocalPersistence } from "firebase/auth"
-import { getFirestore } from "firebase/firestore"
+import { getFirestore, collection, doc, setDoc, updateDoc, deleteDoc, onSnapshot, query } from "firebase/firestore"
 
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
@@ -20,4 +20,39 @@ setPersistence(auth, browserLocalPersistence)
 const db = getFirestore(app)
 
 export { auth, db }
+
+// Firestore utility functions
+export const getUserShoppingList = (userId: string, callback: (items: ShoppingItem[]) => void) => {
+  const q = query(collection(db, "Users", userId, "ShoppingList"))
+  return onSnapshot(q, (snapshot) => {
+    const items = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }) as ShoppingItem)
+    callback(items)
+  })
+}
+
+export const addShoppingItem = async (userId: string, item: Omit<ShoppingItem, "id">) => {
+  const newItemRef = doc(collection(db, "Users", userId, "ShoppingList"))
+  await setDoc(newItemRef, item)
+}
+
+export const updateShoppingItem = async (userId: string, itemId: string, updates: Partial<ShoppingItem>) => {
+  const itemRef = doc(db, "Users", userId, "ShoppingList", itemId)
+  await updateDoc(itemRef, updates)
+}
+
+export const deleteShoppingItem = async (userId: string, itemId: string) => {
+  const itemRef = doc(db, "Users", userId, "ShoppingList", itemId)
+  await deleteDoc(itemRef)
+}
+
+// Types
+export interface ShoppingItem {
+  id: string
+  itemName: string
+  checked: boolean
+  onSale: boolean
+  storeId: string
+  price: string
+  addedAt: string
+}
 

@@ -4,6 +4,10 @@ import { motion, AnimatePresence } from "framer-motion"
 import { X, Share2, ShoppingBasket, Plus, Search, Store, List, Minimize2, Bus } from "lucide-react"
 import Image from "next/image"
 import { useEffect, useState } from "react"
+import { addShoppingItem, type ShoppingItem } from "@/lib/firebase"
+import { useAuthState } from "react-firebase-hooks/auth"
+import { auth } from "@/lib/firebase"
+import { NewItemModal } from "./new-item-modal"
 
 interface SmartBasketProps {
   onClose: () => void
@@ -14,17 +18,8 @@ interface SmartBasketProps {
 
 type ViewMode = "list" | "store"
 
-interface ShoppingItem {
-  id: string
-  itemName: string
-  checked: boolean
-  onSale: boolean
-  storeId: string
-  price: string
-  addedAt: string
-}
-
 export function SmartBasket({ onClose, onProductClick, shoppingItems, onItemCheck }: SmartBasketProps) {
+  const [user] = useAuthState(auth)
   const [viewMode, setViewMode] = useState<ViewMode>(() => {
     if (typeof window !== "undefined") {
       const savedView = localStorage.getItem("smartBasketViewMode")
@@ -34,6 +29,7 @@ export function SmartBasket({ onClose, onProductClick, shoppingItems, onItemChec
   })
   const [selectedStore, setSelectedStore] = useState<string | null>(null)
   const [storesWithCounts, setStoresWithCounts] = useState<{ [storeId: string]: number }>({})
+  const [isNewItemModalOpen, setIsNewItemModalOpen] = useState(false)
 
   useEffect(() => {
     document.body.style.overflow = "hidden"
@@ -64,6 +60,20 @@ export function SmartBasket({ onClose, onProductClick, shoppingItems, onItemChec
     const item = shoppingItems.find((item) => item.id === itemId)
     if (item) {
       onItemCheck(itemId, !item.checked)
+    }
+  }
+
+  const handleAddItem = async (itemName: string) => {
+    if (user) {
+      const newItem: Omit<ShoppingItem, "id"> = {
+        itemName,
+        checked: false,
+        onSale: false,
+        storeId: "Unknown",
+        price: "0.00",
+        addedAt: new Date().toISOString(),
+      }
+      await addShoppingItem(user.uid, newItem)
     }
   }
 
@@ -354,7 +364,10 @@ export function SmartBasket({ onClose, onProductClick, shoppingItems, onItemChec
       {!selectedStore && (
         <div className="px-4 py-6 bg-[#F6F5F8] fixed bottom-0 left-0 right-0">
           <div className="flex gap-2">
-            <button className="flex items-center justify-center gap-2 bg-black text-white rounded-full h-[42px] px-4 flex-1 text-base">
+            <button
+              onClick={() => setIsNewItemModalOpen(true)}
+              className="flex items-center justify-center gap-2 bg-black text-white rounded-full h-[42px] px-4 flex-1 text-base"
+            >
               <Plus className="h-5 w-5" />
               Add to list
             </button>
@@ -365,6 +378,10 @@ export function SmartBasket({ onClose, onProductClick, shoppingItems, onItemChec
           </div>
         </div>
       )}
+
+      <AnimatePresence>
+        <NewItemModal isOpen={isNewItemModalOpen} onClose={() => setIsNewItemModalOpen(false)} onAdd={handleAddItem} />
+      </AnimatePresence>
     </motion.div>
   )
 }
