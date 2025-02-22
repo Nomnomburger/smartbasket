@@ -5,6 +5,10 @@ import { MoreVertical, ArrowRight, Share2, Info, Plus, Search, User, Sun, Shoppi
 import type { User as FirebaseUser } from "firebase/auth"
 import { useState } from "react"
 import Image from "next/image"
+import { useLocation } from "@/lib/useLocation"
+import { ContributeCard } from "./contribute-card"
+import { GeminiInsightCard } from "./gemini-insight-card"
+import type { NearbyStore } from "@/lib/useLocation"
 
 interface HomeProps {
   onSmartBasketClick: () => void
@@ -38,6 +42,9 @@ export function Home({
   const uncheckedItems = shoppingItems.filter((item) => !item.checked)
   const onSaleItems = uncheckedItems.filter((item) => item.onSale)
   const [showSignOutPopup, setShowSignOutPopup] = useState(false)
+  const { nearbyStores, error: locationError } = useLocation(2) // 2km radius
+  const [selectedStore, setSelectedStore] = useState<NearbyStore | null>(null)
+  const [submittedStores, setSubmittedStores] = useState<string[]>([])
 
   return (
     <motion.main
@@ -82,6 +89,28 @@ export function Home({
           )}
         </div>
       </header>
+
+      {/* Location Error Message */}
+      {locationError && (
+        <div className="bg-red-500/10 text-red-500 p-4 rounded-[20px] mx-1 mb-1">
+          <p>{locationError}</p>
+        </div>
+      )}
+
+      {/* Gemini Insight Card */}
+      {/* <GeminiInsightCard /> */}
+
+      {/* Contribute Cards - show for each nearby store */}
+      {nearbyStores
+        .filter((store) => !submittedStores.includes(store.id))
+        .map((store) => (
+          <ContributeCard
+            key={store.id}
+            store={store}
+            onStoreSelect={setSelectedStore}
+            onContribute={() => setSubmittedStores((prev) => [...prev, store.id])}
+          />
+        ))}
 
       {/* Today's Deals Card */}
       <motion.div layoutId="today-card" className="bg-[#16FFA6] rounded-[32px] p-4 text-black">
@@ -241,6 +270,9 @@ export function Home({
           </div>
         </motion.div>
       </motion.div>
+
+      {/* Gemini Insight Card */}
+      <GeminiInsightCard />
     </motion.main>
   )
 }
