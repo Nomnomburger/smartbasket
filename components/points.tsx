@@ -2,7 +2,6 @@
 
 import { motion } from "framer-motion"
 import { X, Info, Tag } from "lucide-react"
-import { Button } from "@/components/ui/button"
 import { useEffect } from "react"
 
 interface PointsProps {
@@ -28,13 +27,16 @@ export function Points({ onClose }: PointsProps) {
           </motion.div>
           <div className="flex gap-2">
             <motion.div layoutId="points-info">
-              <Button variant="ghost" size="icon" className="h-[42px] w-[42px] rounded-full bg-black/10">
+              <button className="h-[42px] w-[42px] rounded-full bg-black/10 flex items-center justify-center">
                 <Info className="h-5 w-5" />
-              </Button>
+              </button>
             </motion.div>
-            <Button variant="ghost" size="icon" className="h-[42px] w-[42px] rounded-full bg-black" onClick={onClose}>
+            <button
+              className="h-[42px] w-[42px] rounded-full bg-black flex items-center justify-center"
+              onClick={onClose}
+            >
               <X className="h-5 w-5 text-white" />
-            </Button>
+            </button>
           </div>
         </div>
       </div>

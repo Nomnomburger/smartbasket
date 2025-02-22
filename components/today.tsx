@@ -2,7 +2,6 @@
 
 import { motion } from "framer-motion"
 import { X, MoreVertical, Plus, Sun } from "lucide-react"
-import { Button } from "@/components/ui/button"
 import Image from "next/image"
 import { useEffect } from "react"
 
@@ -29,13 +28,16 @@ export function Today({ onClose }: TodayProps) {
           </motion.div>
           <div className="flex gap-2">
             <motion.div layoutId="today-more">
-              <Button variant="ghost" size="icon" className="h-[42px] w-[42px] rounded-full bg-black/10">
+              <button className="h-[42px] w-[42px] rounded-full bg-black/10 flex items-center justify-center">
                 <MoreVertical className="h-5 w-5" />
-              </Button>
+              </button>
             </motion.div>
-            <Button variant="ghost" size="icon" className="h-[42px] w-[42px] rounded-full bg-black" onClick={onClose}>
+            <button
+              className="h-[42px] w-[42px] rounded-full bg-black flex items-center justify-center"
+              onClick={onClose}
+            >
               <X className="h-5 w-5 text-white" />
-            </Button>
+            </button>
           </div>
         </div>
       </div>

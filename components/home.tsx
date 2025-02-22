@@ -2,16 +2,43 @@
 
 import { motion } from "framer-motion"
 import { MoreVertical, ArrowRight, Share2, Info, Plus, Search, User, Sun, ShoppingBasket, Tag } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import testingData from "@/data/testingData.json"
+import type { User as FirebaseUser } from "firebase/auth"
+import { useState } from "react"
+import Image from "next/image"
 
 interface HomeProps {
   onSmartBasketClick: () => void
   onTodayClick: () => void
   onPointsClick: () => void
+  onProductClick: (productId: string) => void
+  shoppingItems: ShoppingItem[]
+  user: FirebaseUser | null
+  onSignOut: () => void
 }
 
-export function Home({ onSmartBasketClick, onTodayClick, onPointsClick }: HomeProps) {
+interface ShoppingItem {
+  id: string
+  itemName: string
+  checked: boolean
+  onSale: boolean
+  storeId: string
+  price: string
+  addedAt: string
+}
+
+export function Home({
+  onSmartBasketClick,
+  onTodayClick,
+  onPointsClick,
+  onProductClick,
+  shoppingItems,
+  user,
+  onSignOut,
+}: HomeProps) {
+  const uncheckedItems = shoppingItems.filter((item) => !item.checked)
+  const onSaleItems = uncheckedItems.filter((item) => item.onSale)
+  const [showSignOutPopup, setShowSignOutPopup] = useState(false)
+
   return (
     <motion.main
       initial={{ opacity: 0 }}
@@ -22,11 +49,37 @@ export function Home({ onSmartBasketClick, onTodayClick, onPointsClick }: HomePr
       {/* Header */}
       <header className="flex justify-between items-start p-3">
         <div className="flex flex-col">
-          <h1 className="text-base font-medium">Hi Winston! 😎</h1>
+          <h1 className="text-base font-medium">Hi {user?.displayName?.split(" ")[0] || "there"}! 😎</h1>
           <p className="text-base">Ready to save?</p>
         </div>
-        <div className="h-12 w-12 rounded-full bg-white flex items-center justify-center">
-          <User className="h-6 w-6 text-black" />
+        <div className="relative">
+          <button
+            className="h-12 w-12 rounded-full bg-white flex items-center justify-center overflow-hidden"
+            onClick={() => setShowSignOutPopup(!showSignOutPopup)}
+          >
+            {user?.photoURL ? (
+              <Image
+                src={user.photoURL || "/placeholder.svg"}
+                alt="Profile"
+                width={48}
+                height={48}
+                className="object-cover"
+              />
+            ) : (
+              <User className="h-6 w-6 text-[#171717]" />
+            )}
+          </button>
+          {showSignOutPopup && (
+            <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-10">
+              <p className="px-4 py-2 text-sm text-[#4c4c4c]">{user?.displayName}</p>
+              <button
+                onClick={onSignOut}
+                className="block w-full text-left px-4 py-2 text-sm text-[#4c4c4c] hover:bg-[#c6e8f3]"
+              >
+                Sign out
+              </button>
+            </div>
+          )}
         </div>
       </header>
 
@@ -39,18 +92,16 @@ export function Home({ onSmartBasketClick, onTodayClick, onPointsClick }: HomePr
           </motion.div>
           <div className="flex gap-2">
             <motion.div layoutId="today-more">
-              <Button variant="ghost" size="icon" className="h-[42px] w-[42px] rounded-full bg-black/10">
+              <button className="h-[42px] w-[42px] rounded-full bg-black/10 flex items-center justify-center">
                 <MoreVertical className="h-5 w-5" />
-              </Button>
+              </button>
             </motion.div>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-[42px] w-[42px] rounded-full bg-black"
+            <button
+              className="h-[42px] w-[42px] rounded-full bg-black flex items-center justify-center"
               onClick={onTodayClick}
             >
               <ArrowRight className="h-5 w-5 text-white" />
-            </Button>
+            </button>
           </div>
         </div>
         <motion.div layoutId="today-content">
@@ -88,51 +139,52 @@ export function Home({ onSmartBasketClick, onTodayClick, onPointsClick }: HomePr
           </motion.div>
           <div className="flex gap-2">
             <motion.div layoutId="smartbasket-share">
-              <Button variant="ghost" size="icon" className="h-[42px] w-[42px] rounded-full bg-black/10">
+              <button className="h-[42px] w-[42px] rounded-full bg-black/10 flex items-center justify-center">
                 <Share2 className="h-5 w-5" />
-              </Button>
+              </button>
             </motion.div>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-[42px] w-[42px] rounded-full bg-black"
+            <button
+              className="h-[42px] w-[42px] rounded-full bg-black flex items-center justify-center"
               onClick={onSmartBasketClick}
             >
               <ArrowRight className="h-5 w-5 text-white" />
-            </Button>
+            </button>
           </div>
         </div>
 
         <motion.div layoutId="smartbasket-content" className="mb-4">
           <h2 className="text-2xl">
-            <span className="font-[300]">{testingData.shoppingList.length} products total</span>
+            <span className="font-[300]">
+              {uncheckedItems.length === 0 ? "Nothing on your list" : `${uncheckedItems.length} products total`}
+            </span>
             <br />
-            <span className="font-[500]">{testingData.shoppingList.filter((item) => item.onSale).length} on sale:</span>
+            <span className="font-[500]">
+              {onSaleItems.length === 0 ? "Nothing on sale" : `${onSaleItems.length} on sale:`}
+            </span>
           </h2>
         </motion.div>
 
         <motion.div layoutId="smartbasket-items">
-          {testingData.shoppingList
-            .filter((item) => item.onSale)
-            .slice(0, 2)
-            .map((item) => (
-              <div key={item.id} className="bg-[#CFE6BE] rounded-[20px] p-4 mb-1">
-                <div className="flex justify-between items-start">
-                  <div>
-                    <h3 className="text-base font-medium">{item.itemName}</h3>
-                    <p className="text-sm text-gray-600">{item.storeId} - 2km away</p>
-                  </div>
-                  <span className="text-base">$2.99</span>
-                </div>
-              </div>
-            ))}
-          {testingData.shoppingList.filter((item) => item.onSale).length > 2 && (
-            <div className="bg-[#C6E8F3] rounded-[20px] p-4 mb-1">
+          {onSaleItems.slice(0, 2).map((item) => (
+            <div
+              key={item.id}
+              className="bg-[#CFE6BE] rounded-[20px] p-4 mb-1 cursor-pointer"
+              onClick={() => onProductClick(item.id)}
+            >
               <div className="flex justify-between items-start">
                 <div>
-                  <h3 className="text-base font-medium">
-                    + {testingData.shoppingList.filter((item) => item.onSale).length - 2} more
-                  </h3>
+                  <h3 className="text-base font-medium">{item.itemName}</h3>
+                  <p className="text-sm text-gray-600">{item.storeId} - 2km away</p>
+                </div>
+                <span className="text-base">${item.price}</span>
+              </div>
+            </div>
+          ))}
+          {onSaleItems.length > 2 && (
+            <div className="bg-[#C6E8F3] rounded-[20px] p-4 mb-1 cursor-pointer" onClick={onSmartBasketClick}>
+              <div className="flex justify-between items-start">
+                <div>
+                  <h3 className="text-base font-medium">+ {onSaleItems.length - 2} more</h3>
                 </div>
               </div>
             </div>
@@ -141,11 +193,11 @@ export function Home({ onSmartBasketClick, onTodayClick, onPointsClick }: HomePr
 
         {/* Bottom Actions */}
         <div className="flex gap-2 mt-4">
-          <button className="flex items-center gap-2 bg-white rounded-full h-[42px] px-4 flex-1 text-base">
+          <button className="flex items-center justify-center gap-2 bg-white rounded-full h-[42px] px-4 flex-1 text-base">
             <Plus className="h-5 w-5" />
             Add to list
           </button>
-          <button className="flex items-center gap-2 bg-white rounded-full h-[42px] px-4 flex-1 text-base">
+          <button className="flex items-center justify-center gap-2 bg-white rounded-full h-[42px] px-4 flex-1 text-base">
             <Search className="h-5 w-5" />
             Nearby items
           </button>
@@ -161,18 +213,16 @@ export function Home({ onSmartBasketClick, onTodayClick, onPointsClick }: HomePr
           </motion.div>
           <div className="flex gap-2">
             <motion.div layoutId="points-info">
-              <Button variant="ghost" size="icon" className="h-[42px] w-[42px] rounded-full bg-black/10">
+              <button className="h-[42px] w-[42px] rounded-full bg-black/10 flex items-center justify-center">
                 <Info className="h-5 w-5" />
-              </Button>
+              </button>
             </motion.div>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-[42px] w-[42px] rounded-full bg-black"
+            <button
+              className="h-[42px] w-[42px] rounded-full bg-black flex items-center justify-center"
               onClick={onPointsClick}
             >
               <ArrowRight className="h-5 w-5 text-white" />
-            </Button>
+            </button>
           </div>
         </div>
 
