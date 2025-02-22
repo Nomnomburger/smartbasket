@@ -64,7 +64,7 @@ export function Today({ onClose }: TodayProps) {
 
         <div className="mt-8">
           <h2 className="text-2xl mb-4">Stores with sales</h2>
-          <div className="grid grid-cols-2 gap-2 pb-6">
+          <div className="grid grid-cols-2 gap-1 pb-6">
             {[
               { name: "Walmart", distance: "2km away", items: 3, logo: "/placeholder.svg?height=40&width=40" },
               { name: "No Frills", distance: "1km away", items: 2, logo: "/placeholder.svg?height=40&width=40" },

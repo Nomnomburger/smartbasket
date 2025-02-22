@@ -3,6 +3,7 @@
 import { motion } from "framer-motion"
 import { MoreVertical, ArrowRight, Share2, Info, Plus, Search, User, Sun, ShoppingBasket, Tag } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import testingData from "@/data/testingData.json"
 
 interface HomeProps {
   onSmartBasketClick: () => void
@@ -104,27 +105,38 @@ export function Home({ onSmartBasketClick, onTodayClick, onPointsClick }: HomePr
 
         <motion.div layoutId="smartbasket-content" className="mb-4">
           <h2 className="text-2xl">
-            <span className="font-[300]">12 products total</span>
+            <span className="font-[300]">{testingData.shoppingList.length} products total</span>
             <br />
-            <span className="font-[500]">2 on sale:</span>
+            <span className="font-[500]">{testingData.shoppingList.filter((item) => item.onSale).length} on sale:</span>
           </h2>
         </motion.div>
 
         <motion.div layoutId="smartbasket-items">
-          {[
-            { name: "Granola bars", price: "$2" },
-            { name: "KitKat", price: "$1.99" },
-          ].map((item) => (
-            <div key={item.name} className="bg-[#CFE6BE] rounded-[20px] p-4 mb-1">
+          {testingData.shoppingList
+            .filter((item) => item.onSale)
+            .slice(0, 2)
+            .map((item) => (
+              <div key={item.id} className="bg-[#CFE6BE] rounded-[20px] p-4 mb-1">
+                <div className="flex justify-between items-start">
+                  <div>
+                    <h3 className="text-base font-medium">{item.itemName}</h3>
+                    <p className="text-sm text-gray-600">{item.storeId} - 2km away</p>
+                  </div>
+                  <span className="text-base">$2.99</span>
+                </div>
+              </div>
+            ))}
+          {testingData.shoppingList.filter((item) => item.onSale).length > 2 && (
+            <div className="bg-[#C6E8F3] rounded-[20px] p-4 mb-1">
               <div className="flex justify-between items-start">
                 <div>
-                  <h3 className="text-base font-medium">{item.name}</h3>
-                  <p className="text-sm text-gray-600">Walmart - 2km away</p>
+                  <h3 className="text-base font-medium">
+                    + {testingData.shoppingList.filter((item) => item.onSale).length - 2} more
+                  </h3>
                 </div>
-                <span className="text-base">{item.price}</span>
               </div>
             </div>
-          ))}
+          )}
         </motion.div>
 
         {/* Bottom Actions */}
