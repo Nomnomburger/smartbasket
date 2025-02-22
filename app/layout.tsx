@@ -12,7 +12,6 @@ const onest = Onest({
 export const metadata: Metadata = {
   title: "SmartBasket App",
   description: "Your smart shopping companion",
-    generator: 'v0.dev'
 }
 
 export default function RootLayout({
@@ -27,6 +26,3 @@ export default function RootLayout({
   )
 }
 
-
-
-import './globals.css'

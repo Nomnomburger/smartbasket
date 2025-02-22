@@ -1,0 +1,109 @@
+{
+  "user": {
+    "id": "testUser123",
+    "name": "John Doe",
+    "email": "john@example.com"
+  },
+  "shoppingList": [
+    {
+      "id": "item1",
+      "itemName": "Milk",
+      "checked": false,
+      "onSale": true,
+      "storeId": "Walmart",
+      "price": "2.99",
+      "addedAt": "2025-02-22T12:00:00Z"
+    },
+    {
+      "id": "item2",
+      "itemName": "Bread",
+      "checked": false,
+      "onSale": false,
+      "storeId": "Walmart",
+      "price": "3.49",
+      "addedAt": "2025-02-22T12:01:00Z"
+    },
+    {
+      "id": "item3",
+      "itemName": "Eggs",
+      "checked": true,
+      "onSale": false,
+      "storeId": "Costco",
+      "price": "4.50",
+      "addedAt": "2025-02-22T12:02:00Z"
+    },
+    {
+      "id": "item4",
+      "itemName": "Cheese",
+      "checked": false,
+      "onSale": true,
+      "storeId": "Costco",
+      "price": "7.25",
+      "addedAt": "2025-02-22T12:03:00Z"
+    },
+    {
+      "id": "item5",
+      "itemName": "Apples",
+      "checked": false,
+      "onSale": false,
+      "storeId": "Whole Foods",
+      "price": "2.00",
+      "addedAt": "2025-02-22T12:04:00Z"
+    },
+    {
+      "id": "item6",
+      "itemName": "Bananas",
+      "checked": true,
+      "onSale": true,
+      "storeId": "Whole Foods",
+      "price": "1.50",
+      "addedAt": "2025-02-22T12:05:00Z"
+    },
+    {
+      "id": "item7",
+      "itemName": "Chicken",
+      "checked": false,
+      "onSale": false,
+      "storeId": "Walmart",
+      "price": "12.00",
+      "addedAt": "2025-02-22T12:06:00Z"
+    },
+    {
+      "id": "item8",
+      "itemName": "Rice",
+      "checked": false,
+      "onSale": false,
+      "storeId": "Costco",
+      "price": "8.75",
+      "addedAt": "2025-02-22T12:07:00Z"
+    },
+    {
+      "id": "item9",
+      "itemName": "Pasta",
+      "checked": true,
+      "onSale": true,
+      "storeId": "Walmart",
+      "price": "1.25",
+      "addedAt": "2025-02-22T12:08:00Z"
+    },
+    {
+      "id": "item10",
+      "itemName": "Tomatoes",
+      "checked": false,
+      "onSale": false,
+      "storeId": "Whole Foods",
+      "price": "3.00",
+      "addedAt": "2025-02-22T12:09:00Z"
+    },
+    {
+      "id": "item11",
+      "itemName": "Pickles",
+      "checked": false,
+      "onSale": false,
+      "storeId": "Loblaws",
+      "price": "4.00",
+      "addedAt": "2025-02-22T12:10:00Z"
+    }
+  ]
+}
+
