@@ -1,6 +1,18 @@
 import { initializeApp, getApps, getApp } from "firebase/app"
 import { getAuth, setPersistence, browserLocalPersistence } from "firebase/auth"
-import { getFirestore, collection, doc, setDoc, updateDoc, deleteDoc, onSnapshot, query } from "firebase/firestore"
+import {
+  getFirestore,
+  collection,
+  doc,
+  setDoc,
+  updateDoc,
+  deleteDoc,
+  onSnapshot,
+  query,
+  writeBatch,
+} from "firebase/firestore"
+// Add these imports at the top of the file
+import { addDoc, where, getDocs, serverTimestamp } from "firebase/firestore"
 
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
@@ -78,6 +90,119 @@ export const updateProductInfo = async (
   } catch (error) {
     console.error("Error updating product info:", error)
     throw error
+  }
+}
+
+// Add these new functions at the end of the file
+
+export const addProductOffer = async (
+  productName: string,
+  offer: {
+    onSale: boolean
+    regularPrice: number
+    salePrice: number
+    storeId: string
+  },
+) => {
+  try {
+    console.log("Adding product offer for:", productName)
+    // Check if the product already exists
+    const productsRef = collection(db, "Products")
+    const q = query(productsRef, where("name", "==", productName))
+    const querySnapshot = await getDocs(q)
+
+    let productId: string
+
+    if (querySnapshot.empty) {
+      console.log("Product doesn't exist, creating new product")
+      // If the product doesn't exist, create a new one
+      const newProductRef = await addDoc(productsRef, { name: productName })
+      productId = newProductRef.id
+      console.log("New product created with ID:", productId)
+    } else {
+      // If the product exists, use its ID
+      productId = querySnapshot.docs[0].id
+      console.log("Existing product found with ID:", productId)
+    }
+
+    // Add the offer to the Offers subcollection
+    console.log("Adding offer to Offers subcollection")
+    const offersRef = collection(db, "Products", productId, "Offers")
+    const newOfferRef = await addDoc(offersRef, {
+      ...offer,
+      updatedAt: serverTimestamp(),
+    })
+    console.log("Offer added with ID:", newOfferRef.id)
+
+    console.log("Product offer added successfully")
+    return true
+  } catch (error) {
+    console.error("Error adding product offer:", error)
+    return false
+  }
+}
+
+export const updateUserShoppingListWithSales = async (userId: string) => {
+  try {
+    console.log("Updating user shopping list with sales for user:", userId)
+    const userShoppingListRef = collection(db, "Users", userId, "ShoppingList")
+    const userShoppingListSnapshot = await getDocs(userShoppingListRef)
+
+    console.log("Number of items in user's shopping list:", userShoppingListSnapshot.size)
+
+    const batch = writeBatch(db)
+    let updatesMade = false
+
+    for (const doc of userShoppingListSnapshot.docs) {
+      const item = doc.data() as ShoppingItem
+      console.log("Checking item:", item.itemName)
+      const productsRef = collection(db, "Products")
+      const q = query(productsRef, where("name", "==", item.itemName))
+      const productSnapshot = await getDocs(q)
+
+      if (!productSnapshot.empty) {
+        console.log("Matching product found in Products collection")
+        const productId = productSnapshot.docs[0].id
+        const offersRef = collection(db, "Products", productId, "Offers")
+        const offersSnapshot = await getDocs(offersRef)
+
+        console.log("Number of offers found:", offersSnapshot.size)
+
+        let bestOffer: any = null
+
+        offersSnapshot.forEach((offerDoc) => {
+          const offer = offerDoc.data()
+          if (offer.onSale && (!bestOffer || offer.salePrice < bestOffer.salePrice)) {
+            bestOffer = offer
+          }
+        })
+
+        if (bestOffer && (!item.price || bestOffer.salePrice < Number.parseFloat(item.price))) {
+          console.log("Updating item with best offer:", bestOffer)
+          batch.update(doc.ref, {
+            onSale: true,
+            price: bestOffer.salePrice.toFixed(2),
+            storeId: bestOffer.storeId,
+          })
+          updatesMade = true
+        } else {
+          console.log("No better offer found for this item")
+        }
+      } else {
+        console.log("No matching product found in Products collection")
+      }
+    }
+
+    if (updatesMade) {
+      await batch.commit()
+      console.log("Batch update committed successfully")
+    } else {
+      console.log("No updates were necessary")
+    }
+
+    console.log("User shopping list update completed")
+  } catch (error) {
+    console.error("Error updating user shopping list with sales:", error)
   }
 }
 

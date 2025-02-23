@@ -51,7 +51,7 @@ function deg2rad(deg: number): number {
 export function findNearbyStores(
   latitude: number,
   longitude: number,
-  maxDistance = 2, // Default 2km radius
+  maxDistance = 0.5, // Default 0.5km radius
 ): Store[] {
   return stores
     .map((store) => ({

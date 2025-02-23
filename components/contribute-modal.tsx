@@ -7,6 +7,9 @@ import { motion, AnimatePresence } from "framer-motion"
 import { X, Camera, Upload, Loader2, Check, AlertCircle } from "lucide-react"
 import { GoogleGenerativeAI } from "@google/generative-ai"
 import type { NearbyStore } from "@/lib/useLocation"
+import { addProductOffer, updateUserShoppingListWithSales } from "@/lib/firebase"
+import { useAuthState } from "react-firebase-hooks/auth"
+import { auth } from "@/lib/firebase"
 
 interface ContributeModalProps {
   isOpen: boolean
@@ -17,7 +20,8 @@ interface ContributeModalProps {
 interface AnalysisResult {
   isValidSale: boolean
   product?: string
-  discount?: string
+  regularPrice?: number
+  salePrice?: number
   confidence?: number
 }
 
@@ -32,6 +36,8 @@ export function ContributeModal({ isOpen, onClose, store }: ContributeModalProps
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [rawResponse, setRawResponse] = useState<string | null>(null)
   const [analysisResult, setAnalysisResult] = useState<AnalysisResult | null>(null)
+
+  const [user] = useAuthState(auth)
 
   const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
@@ -71,7 +77,7 @@ export function ContributeModal({ isOpen, onClose, store }: ContributeModalProps
       // Analyze the image
       console.log("Sending request to Gemini API...")
       const result = await model.generateContent([
-        "Analyze this image. Is it a store sale? What product? What's the discount? JSON response: {isValidSale, product, discount, confidence}",
+        "Analyze this image. Is it a store sale? What product? What's the regular price and sale price? JSON response: {isValidSale, product, regularPrice, salePrice, confidence}",
         imageData,
       ])
       console.log("Received response from Gemini API")
@@ -85,9 +91,13 @@ export function ContributeModal({ isOpen, onClose, store }: ContributeModalProps
       try {
         // Clean up the response text by removing markdown code block if present
         const jsonText = responseText.replace(/```json\n?|\n?```/g, "").trim()
-        analysisResult = JSON.parse(jsonText)
+        // Remove any trailing commas before closing braces or brackets
+        const cleanedJsonText = jsonText.replace(/,\s*([\]}])/g, "$1")
+        console.log("Cleaned JSON text:", cleanedJsonText)
+        analysisResult = JSON.parse(cleanedJsonText)
       } catch (error) {
         console.error("Error parsing JSON:", error)
+        console.error("Problematic JSON string:", responseText)
         setStatus("error")
         setErrorType("PARSING_ERROR")
         return
@@ -97,8 +107,38 @@ export function ContributeModal({ isOpen, onClose, store }: ContributeModalProps
       setAnalysisResult(analysisResult)
 
       if (analysisResult.isValidSale && analysisResult.confidence && analysisResult.confidence > 0.7) {
+        console.log("Valid sale detected, attempting to add product offer")
+        // Add the product offer to Firestore
+        if (analysisResult.product || analysisResult.regularPrice || analysisResult.salePrice) {
+          console.log("Adding product offer:", {
+            product: analysisResult.product,
+            regularPrice: analysisResult.regularPrice,
+            salePrice: analysisResult.salePrice,
+            storeId: store.name,
+          })
+          const offerAdded = await addProductOffer(analysisResult.product, {
+            onSale: true,
+            regularPrice: analysisResult.regularPrice,
+            salePrice: analysisResult.salePrice,
+            storeId: store.name,
+          })
+          console.log("Product offer added:", offerAdded)
+
+          if (offerAdded && user) {
+            console.log("Updating user shopping list with sales")
+            // Update the user's shopping list with the new sale information
+            await updateUserShoppingListWithSales(user.uid)
+            console.log("User shopping list updated")
+          } else {
+            console.log("Failed to add product offer or user not logged in")
+          }
+        } else {
+          console.log("Missing required information for product offer")
+        }
+
         setStatus("success")
       } else {
+        console.log("Invalid sale or low confidence:", analysisResult)
         setStatus("error")
       }
     } catch (error) {

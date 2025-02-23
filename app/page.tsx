@@ -9,7 +9,14 @@ import { Points } from "@/components/points"
 import { ProductDetails } from "@/components/product-details"
 import { SignIn } from "@/components/sign-in"
 import { useAuthState } from "react-firebase-hooks/auth"
-import { auth, getUserShoppingList, updateShoppingItem, deleteShoppingItem, type ShoppingItem } from "@/lib/firebase"
+import {
+  auth,
+  getUserShoppingList,
+  updateShoppingItem,
+  deleteShoppingItem,
+  type ShoppingItem,
+  updateUserShoppingListWithSales,
+} from "@/lib/firebase"
 import { signOut } from "firebase/auth"
 import { Loader2 } from "lucide-react"
 
@@ -31,6 +38,9 @@ export default function Page() {
         })
         setShoppingItems(sortedItems)
       })
+
+      // Update shopping list with sales when the app loads
+      updateUserShoppingListWithSales(user.uid)
 
       return () => unsubscribe()
     }
