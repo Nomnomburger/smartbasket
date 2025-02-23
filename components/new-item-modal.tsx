@@ -17,7 +17,9 @@ export function NewItemModal({ isOpen, onClose, onAdd }: NewItemModalProps) {
   const [itemName, setItemName] = useState("")
   const [isLoading, setIsLoading] = useState(false)
   const [user] = useAuthState(auth)
-  const { location } = useLocation()
+  const { city } = useLocation()
+
+  console.log("Current city in NewItemModal:", city)
 
   const handleSubmit = async () => {
     if (itemName.trim() && user) {
@@ -25,9 +27,11 @@ export function NewItemModal({ isOpen, onClose, onAdd }: NewItemModalProps) {
       try {
         console.log("Starting item addition process...")
 
-        // Construct the query with location
-        const locationString = location ? `in ${location.latitude.toFixed(2)},${location.longitude.toFixed(2)}` : ""
-        const fullQuery = `${itemName.trim()} ${locationString}`.trim()
+        const requestBody = {
+          query: itemName.trim(),
+          city: city || "Unknown Location",
+        }
+        console.log("Request body:", requestBody)
 
         // Search for product info first
         console.log("Fetching product info...")
@@ -36,7 +40,7 @@ export function NewItemModal({ isOpen, onClose, onAdd }: NewItemModalProps) {
           headers: {
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({ query: fullQuery }),
+          body: JSON.stringify(requestBody),
         })
 
         if (!response.ok) {
@@ -111,7 +115,8 @@ export function NewItemModal({ isOpen, onClose, onAdd }: NewItemModalProps) {
             <div>
               <h3 className="text-xl mb-2">Auto price comparison</h3>
               <p className="text-[#4C4C4C]">
-                We'll automatically find the best price for this item and add it to your shopping list!
+                We'll automatically find the best price for this item{city ? ` in ${city}` : ""} and add it to your
+                shopping list!
               </p>
             </div>
           </div>

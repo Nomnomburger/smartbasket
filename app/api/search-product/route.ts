@@ -8,7 +8,7 @@ export async function POST(req: Request) {
   const body = await req.json()
   console.log("Request body:", body)
 
-  const { query } = body
+  const { query, city } = body
 
   if (!query) {
     return NextResponse.json({ message: "Query is required" }, { status: 400 })
@@ -21,9 +21,9 @@ export async function POST(req: Request) {
       getJson(
         {
           engine: "google_shopping",
-          q: query,
+          q: `${query} in ${city || ""}`.trim(),
+          gl: "ca", // Set Google location to Canada
           api_key: process.env.SERPAPI_KEY,
-          num: 5, // Limit to top 5 results for faster processing
         },
         (data: any) => {
           if (data.error) {
@@ -52,23 +52,23 @@ export async function POST(req: Request) {
     const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" })
 
     const prompt = `
-  Analyze the following Google Shopping results for the query "${query}".
-  Find the store with the lowest price for the item.
-  Only consider the top 5 results. If there are sponsored results, ignore them.
-  Exclude online retailers like Amazon, eBay, or other e-commerce platforms.
-  Also exclude online delivery services like Instacart.
-  For grocery items, prioritize physical grocery stores or big-box stores like Walmart, Fresco, No Frills, etc.
-  Focus on physical store locations that customers can visit in person.
-  Provide the result in the following JSON format without any markdown formatting or code blocks:
-  {
-    "itemName": "The name of the item",
-    "lowestPrice": "The lowest price found (as a string with 2 decimal places)",
-    "storeId": "The name of the store with the lowest price",
-    "sourceIconUrl": "The URL of the source icon for the store with the lowest price"
-  }
+Analyze the following Google Shopping results for the query "${query}" in ${city || "an unknown location"}.
+Find the store with the lowest price for the item.
+Prioritize results from big shops like Walmart, Costco, Loblaws, and other major retailers.
+Exclude online retailers like Amazon, eBay, or other e-commerce platforms.
+Also exclude online delivery services like Instacart.
+For grocery items, prioritize physical grocery stores or big-box stores.
+Focus on physical store locations that customers can visit in person.
+Provide the result in the following JSON format without any markdown formatting or code blocks:
+{
+  "itemName": "The name of the item",
+  "lowestPrice": "The lowest price found (as a string with 2 decimal places)",
+  "storeId": "The name of the store with the lowest price",
+  "sourceIconUrl": "The URL of the source icon for the store with the lowest price"
+}
 
-  Here are the results:
-  ${JSON.stringify(serpResult.shopping_results.slice(0, 5), null, 2)}
+Here are the results:
+${JSON.stringify(serpResult.shopping_results, null, 2)}
 `
 
     const result = await model.generateContent(prompt)
