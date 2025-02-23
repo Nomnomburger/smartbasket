@@ -1,19 +1,17 @@
-import type { NextApiRequest, NextApiResponse } from "next"
+import { NextResponse } from "next/server"
 import { GoogleGenerativeAI } from "@google/generative-ai"
 import { getJson } from "serpapi"
 
-export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+export async function POST(req: Request) {
   console.log("Received request in search-product API")
-  console.log("Request body:", req.body)
 
-  if (req.method !== "POST") {
-    return res.status(405).json({ message: "Method not allowed" })
-  }
+  const body = await req.json()
+  console.log("Request body:", body)
 
-  const { query } = req.body
+  const { query } = body
 
   if (!query) {
-    return res.status(400).json({ message: "Query is required" })
+    return NextResponse.json({ message: "Query is required" }, { status: 400 })
   }
 
   try {
@@ -78,11 +76,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       throw new Error("Invalid analysis result")
     }
 
-    res.status(200).json(analysisResult)
+    return NextResponse.json(analysisResult)
   } catch (error) {
     console.error("Error in search-product API:", error)
     console.error("Error stack:", error.stack)
-    res.status(500).json({ message: "An error occurred while processing your request", error: error.message })
+    return NextResponse.json(
+      { message: "An error occurred while processing your request", error: error.message },
+      { status: 500 },
+    )
   }
 }
 
