@@ -9,7 +9,7 @@ import { Points } from "@/components/points"
 import { ProductDetails } from "@/components/product-details"
 import { SignIn } from "@/components/sign-in"
 import { useAuthState } from "react-firebase-hooks/auth"
-import { auth, getUserShoppingList, updateShoppingItem, type ShoppingItem } from "@/lib/firebase"
+import { auth, getUserShoppingList, updateShoppingItem, deleteShoppingItem, type ShoppingItem } from "@/lib/firebase"
 import { signOut } from "firebase/auth"
 import { Loader2 } from "lucide-react"
 
@@ -50,9 +50,7 @@ export default function Page() {
       newStack.pop()
       setViewStack(newStack)
       setActiveView(newStack[newStack.length - 1])
-      if (newStack[newStack.length - 1] !== "product") {
-        setSelectedProductId(null)
-      }
+      setSelectedProductId(null)
     }
   }
 
@@ -67,6 +65,13 @@ export default function Page() {
       await signOut(auth)
     } catch (error) {
       console.error("Error signing out:", error)
+    }
+  }
+
+  const handleDelete = async (itemId: string) => {
+    if (user) {
+      await deleteShoppingItem(user.uid, itemId)
+      navigateBack()
     }
   }
 
@@ -123,6 +128,7 @@ export default function Page() {
             itemId={selectedProductId}
             onClose={navigateBack}
             onItemCheck={handleItemCheck}
+            onDelete={handleDelete}
             shoppingItems={shoppingItems}
           />
         )}

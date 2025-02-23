@@ -2,7 +2,10 @@
 
 import { useState } from "react"
 import { motion } from "framer-motion"
-import { X, Info, Check } from "lucide-react"
+import { X, Info, Check, Loader2 } from "lucide-react"
+import { useAuthState } from "react-firebase-hooks/auth"
+import { auth, addShoppingItem } from "@/lib/firebase"
+import { useLocation } from "@/lib/useLocation"
 
 interface NewItemModalProps {
   isOpen: boolean
@@ -12,12 +15,69 @@ interface NewItemModalProps {
 
 export function NewItemModal({ isOpen, onClose, onAdd }: NewItemModalProps) {
   const [itemName, setItemName] = useState("")
+  const [isLoading, setIsLoading] = useState(false)
+  const [user] = useAuthState(auth)
+  const { city } = useLocation()
 
-  const handleSubmit = () => {
-    if (itemName.trim()) {
-      onAdd(itemName.trim())
-      setItemName("")
-      onClose()
+  console.log("Current city in NewItemModal:", city)
+
+  const handleSubmit = async () => {
+    if (itemName.trim() && user) {
+      setIsLoading(true)
+      try {
+        console.log("Starting item addition process...")
+
+        const requestBody = {
+          query: itemName.trim(),
+          city: city || "Unknown Location",
+        }
+        console.log("Request body:", requestBody)
+
+        // Search for product info first
+        console.log("Fetching product info...")
+        const response = await fetch("/api/search-product", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(requestBody),
+        })
+
+        if (!response.ok) {
+          const errorData = await response.json()
+          throw new Error(`Failed to fetch product info: ${response.statusText}. Error: ${JSON.stringify(errorData)}`)
+        }
+
+        const productInfo = await response.json()
+        console.log("Product info received:", productInfo)
+
+        // Add the item to Firebase with the product info
+        console.log("Adding item to Firebase with product info...")
+        const newItemId = await addShoppingItem(user.uid, {
+          itemName: itemName.trim(),
+          checked: false,
+          onSale: false,
+          storeId: productInfo.storeId || "Unknown",
+          price: productInfo.lowestPrice || "0.00",
+          sourceIconUrl: productInfo.sourceIconUrl || "",
+          addedAt: new Date().toISOString(),
+        })
+
+        if (newItemId) {
+          console.log("Item added to Firebase:", newItemId)
+          onAdd(itemName.trim())
+          setItemName("")
+          onClose()
+        } else {
+          throw new Error("Failed to add item to Firebase")
+        }
+      } catch (error) {
+        console.error("Error adding item:", error)
+        console.error("Error details:", JSON.stringify(error, Object.getOwnPropertyNames(error)))
+        // You might want to show an error message to the user here
+      } finally {
+        setIsLoading(false)
+      }
     }
   }
 
@@ -55,7 +115,8 @@ export function NewItemModal({ isOpen, onClose, onAdd }: NewItemModalProps) {
             <div>
               <h3 className="text-xl mb-2">Auto price comparison</h3>
               <p className="text-[#4C4C4C]">
-                Pricing and best store will appear after you add this item to your shopping list!
+                We'll automatically find the best price for this item{city ? ` in ${city}` : ""} and add it to your
+                shopping list!
               </p>
             </div>
           </div>
@@ -76,10 +137,10 @@ export function NewItemModal({ isOpen, onClose, onAdd }: NewItemModalProps) {
           />
           <button
             onClick={handleSubmit}
-            disabled={!itemName.trim()}
+            disabled={!itemName.trim() || isLoading}
             className="h-[56px] w-[56px] rounded-full bg-[#16FFA6] flex items-center justify-center disabled:opacity-50"
           >
-            <Check className="h-5 w-5" />
+            {isLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : <Check className="h-5 w-5" />}
           </button>
         </div>
       </motion.div>

@@ -3,8 +3,8 @@
 import { motion, AnimatePresence } from "framer-motion"
 import { X, Share2, ShoppingBasket, Plus, Search, Store, List, Minimize2, Bus } from "lucide-react"
 import Image from "next/image"
-import { useEffect, useState } from "react"
-import { addShoppingItem, type ShoppingItem } from "@/lib/firebase"
+import { useEffect, useState, useMemo, useCallback } from "react"
+import type { ShoppingItem } from "@/lib/firebase"
 import { useAuthState } from "react-firebase-hooks/auth"
 import { auth } from "@/lib/firebase"
 import { NewItemModal } from "./new-item-modal"
@@ -31,20 +31,10 @@ export function SmartBasket({ onClose, onProductClick, shoppingItems, onItemChec
   const [storesWithCounts, setStoresWithCounts] = useState<{ [storeId: string]: number }>({})
   const [isNewItemModalOpen, setIsNewItemModalOpen] = useState(false)
 
-  useEffect(() => {
-    document.body.style.overflow = "hidden"
-    updateStoreCounts(shoppingItems)
-    return () => {
-      document.body.style.overflow = "unset"
-    }
-  }, [shoppingItems])
+  const validShoppingItems = useMemo(() => shoppingItems.filter((item) => item.price && item.storeId), [shoppingItems])
 
-  useEffect(() => {
-    localStorage.setItem("smartBasketViewMode", viewMode)
-  }, [viewMode])
-
-  const updateStoreCounts = (items: ShoppingItem[]) => {
-    const counts = items.reduce(
+  const updateStoreCounts = useCallback((items: ShoppingItem[]) => {
+    return items.reduce(
       (acc, item) => {
         if (!item.checked) {
           acc[item.storeId] = (acc[item.storeId] || 0) + 1
@@ -53,34 +43,34 @@ export function SmartBasket({ onClose, onProductClick, shoppingItems, onItemChec
       },
       {} as { [storeId: string]: number },
     )
-    setStoresWithCounts(counts)
-  }
+  }, [])
 
-  const toggleItemCheck = (itemId: string) => {
-    const item = shoppingItems.find((item) => item.id === itemId)
-    if (item) {
-      onItemCheck(itemId, !item.checked)
+  useEffect(() => {
+    document.body.style.overflow = "hidden"
+    setStoresWithCounts(updateStoreCounts(validShoppingItems))
+    return () => {
+      document.body.style.overflow = "unset"
     }
-  }
+  }, [validShoppingItems, updateStoreCounts])
 
-  const handleAddItem = async (itemName: string) => {
-    if (user) {
-      const newItem: Omit<ShoppingItem, "id"> = {
-        itemName,
-        checked: false,
-        onSale: false,
-        storeId: "Unknown",
-        price: "0.00",
-        addedAt: new Date().toISOString(),
+  useEffect(() => {
+    localStorage.setItem("smartBasketViewMode", viewMode)
+  }, [viewMode])
+
+  const toggleItemCheck = useCallback(
+    (itemId: string) => {
+      const item = validShoppingItems.find((item) => item.id === itemId)
+      if (item) {
+        onItemCheck(itemId, !item.checked)
       }
-      await addShoppingItem(user.uid, newItem)
-    }
-  }
+    },
+    [validShoppingItems, onItemCheck],
+  )
 
-  const uncheckedItems = shoppingItems.filter((item) => !item.checked)
-  const checkedItems = shoppingItems.filter((item) => item.checked)
+  const uncheckedItems = useMemo(() => validShoppingItems.filter((item) => !item.checked), [validShoppingItems])
+  const checkedItems = useMemo(() => validShoppingItems.filter((item) => item.checked), [validShoppingItems])
   const totalUncheckedItems = uncheckedItems.length
-  const onSaleItems = uncheckedItems.filter((item) => item.onSale).length
+  const onSaleItems = useMemo(() => uncheckedItems.filter((item) => item.onSale).length, [uncheckedItems])
 
   return (
     <motion.div
@@ -153,7 +143,7 @@ export function SmartBasket({ onClose, onProductClick, shoppingItems, onItemChec
                 </div>
 
                 <div className="space-y-0">
-                  {shoppingItems
+                  {validShoppingItems
                     .filter((item) => item.storeId === selectedStore)
                     .map((item, index, array) => (
                       <div key={item.id} className="cursor-pointer" onClick={() => onProductClick(item.id)}>
@@ -253,28 +243,43 @@ export function SmartBasket({ onClose, onProductClick, shoppingItems, onItemChec
                     exit={{ opacity: 0 }}
                     className="grid grid-cols-2 gap-1"
                   >
-                    {Object.entries(storesWithCounts).map(([storeId, count]) => (
-                      <div
-                        key={storeId}
-                        className="bg-white rounded-[20px] p-4 cursor-pointer"
-                        onClick={() => setSelectedStore(storeId)}
-                      >
-                        <div className="mb-8">
-                          <h3 className="text-base font-medium">{storeId}</h3>
-                          <p className="text-sm text-gray-600">2km away</p>
+                    {Object.entries(storesWithCounts).map(([storeId, count]) => {
+                      const storeItem = validShoppingItems.find((item) => item.storeId === storeId)
+                      return (
+                        <div
+                          key={storeId}
+                          className="bg-white rounded-[20px] p-4 cursor-pointer"
+                          onClick={() => setSelectedStore(storeId)}
+                        >
+                          <div className="mb-8">
+                            <h3 className="text-base font-medium">{storeId}</h3>
+                            <p className="text-sm text-gray-600">2km away</p>
+                          </div>
+                          <div className="flex items-center justify-between">
+                            <span className="text-base">{count} items</span>
+                            <div className="relative w-[42px] h-[42px] rounded-full bg-gray-200 overflow-hidden">
+                              {storeItem && storeItem.sourceIconUrl ? (
+                                <Image
+                                  src={storeItem.sourceIconUrl || "/placeholder.svg"}
+                                  alt={`${storeId} logo`}
+                                  width={42}
+                                  height={42}
+                                  className="rounded-full object-cover"
+                                />
+                              ) : (
+                                <Image
+                                  src="/placeholder.svg?height=42&width=42"
+                                  alt={`${storeId} logo`}
+                                  width={42}
+                                  height={42}
+                                  className="rounded-full"
+                                />
+                              )}
+                            </div>
+                          </div>
                         </div>
-                        <div className="flex items-center justify-between">
-                          <span className="text-base">{count} items</span>
-                          <Image
-                            src="/placeholder.svg?height=40&width=40"
-                            alt={`${storeId} logo`}
-                            width={40}
-                            height={40}
-                            className="rounded-full"
-                          />
-                        </div>
-                      </div>
-                    ))}
+                      )
+                    })}
                   </motion.div>
                 ) : (
                   <>
@@ -300,13 +305,16 @@ export function SmartBasket({ onClose, onProductClick, shoppingItems, onItemChec
                               />
                               <span className="text-base font-normal">{item.itemName}</span>
                             </div>
-                            <span
-                              className={`text-xs font-[300] h-8 px-3 rounded-full flex items-center ${
-                                item.onSale ? "bg-[#CFE6BE]" : "bg-black/5"
-                              }`}
-                            >
-                              {item.storeId}
-                            </span>
+                            <div className="flex flex-col items-end">
+                              <span
+                                className={`text-xs font-[300] h-6 px-2 rounded-full flex items-center ${
+                                  item.onSale ? "bg-[#CFE6BE]" : "bg-black/5"
+                                }`}
+                              >
+                                {item.storeId}
+                              </span>
+                              <span className="text-sm font-medium mt-1">${item.price}</span>
+                            </div>
                           </div>
                           {index < uncheckedItems.length - 1 && (
                             <div className="mx-4">
@@ -380,7 +388,15 @@ export function SmartBasket({ onClose, onProductClick, shoppingItems, onItemChec
       )}
 
       <AnimatePresence>
-        <NewItemModal isOpen={isNewItemModalOpen} onClose={() => setIsNewItemModalOpen(false)} onAdd={handleAddItem} />
+        <NewItemModal
+          isOpen={isNewItemModalOpen}
+          onClose={() => setIsNewItemModalOpen(false)}
+          onAdd={(itemName) => {
+            // The item is already added in the NewItemModal component
+            // We just need to close the modal here
+            setIsNewItemModalOpen(false)
+          }}
+        />
       </AnimatePresence>
     </motion.div>
   )

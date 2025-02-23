@@ -1,9 +1,34 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { type Store, findNearbyStores } from "./stores"
+import { findNearbyStores, type Store } from "./stores"
 
-interface Location {
+async function getCityFromCoordinates(lat: number, lon: number): Promise<string | null> {
+  const apiKey = process.env.NEXT_PUBLIC_OPENWEATHERMAP_API_KEY
+  if (!apiKey) {
+    console.error("OpenWeatherMap API key is not set")
+    return null
+  }
+
+  try {
+    const response = await fetch(
+      `https://api.openweathermap.org/geo/1.0/reverse?lat=${lat}&lon=${lon}&limit=1&appid=${apiKey}`,
+    )
+    const data = await response.json()
+    console.log("OpenWeatherMap API Response:", JSON.stringify(data, null, 2))
+    if (data && data.length > 0) {
+      const { name, state, country } = data[0]
+      return `${name}, ${state || ""}, ${country}`.replace(/, ,/g, ",").replace(/^,\s*/, "").replace(/,\s*$/, "")
+    } else {
+      console.error("No location data found in the API response")
+    }
+  } catch (error) {
+    console.error("Error fetching city data:", error)
+  }
+  return null
+}
+
+export interface Location {
   latitude: number
   longitude: number
 }
@@ -12,70 +37,51 @@ export interface NearbyStore extends Store {
   distance: number
 }
 
+export interface UseLocationResult {
+  location: Location | null
+  city: string | null
+  error: string | null
+  nearbyStores: NearbyStore[]
+}
+
 export function useLocation(maxDistance = 2) {
   const [location, setLocation] = useState<Location | null>(null)
-  const [nearbyStores, setNearbyStores] = useState<NearbyStore[]>([])
+  const [city, setCity] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
-  const [loading, setLoading] = useState(true)
+  const [nearbyStores, setNearbyStores] = useState<NearbyStore[]>([])
 
   useEffect(() => {
-    let watchId: number
-
-    const success = (position: GeolocationPosition) => {
-      const newLocation = {
-        latitude: position.coords.latitude,
-        longitude: position.coords.longitude,
-      }
-      setLocation(newLocation)
-
-      // Find nearby stores
-      const stores = findNearbyStores(newLocation.latitude, newLocation.longitude, maxDistance)
-      setNearbyStores(stores as NearbyStore[])
-      setLoading(false)
-    }
-
-    const error = (error: GeolocationPositionError) => {
-      switch (error.code) {
-        case error.PERMISSION_DENIED:
-          setError("Please enable location services to find nearby sales")
-          break
-        case error.POSITION_UNAVAILABLE:
-          setError("Location information is unavailable")
-          break
-        case error.TIMEOUT:
-          setError("Location request timed out")
-          break
-        default:
-          setError("An unknown error occurred")
-          break
-      }
-      setLoading(false)
-    }
-
     if (!navigator.geolocation) {
       setError("Geolocation is not supported by your browser")
-      setLoading(false)
       return
     }
 
-    // Get initial location
-    navigator.geolocation.getCurrentPosition(success, error)
-
-    // Watch for location changes
-    watchId = navigator.geolocation.watchPosition(success, error, {
-      enableHighAccuracy: true,
-      timeout: 5000,
-      maximumAge: 0,
-    })
-
-    // Cleanup
-    return () => {
-      if (watchId) {
-        navigator.geolocation.clearWatch(watchId)
+    const success = async (position: GeolocationPosition) => {
+      const newLocation: Location = {
+        latitude: position.coords.latitude,
+        longitude: position.coords.longitude,
       }
-    }
-  }, [maxDistance])
+      console.log("Geolocation:", newLocation)
+      setLocation(newLocation)
+      updateNearbyStores(newLocation)
 
-  return { location, nearbyStores, error, loading }
+      const cityName = await getCityFromCoordinates(newLocation.latitude, newLocation.longitude)
+      console.log("Location:", cityName)
+      setCity(cityName)
+    }
+
+    const error = () => {
+      setError("Unable to retrieve your location")
+    }
+
+    navigator.geolocation.getCurrentPosition(success, error)
+  }, [])
+
+  const updateNearbyStores = (location: Location) => {
+    const stores = findNearbyStores(location.latitude, location.longitude, maxDistance)
+    setNearbyStores(stores as NearbyStore[])
+  }
+
+  return { location, city, error, nearbyStores }
 }
 

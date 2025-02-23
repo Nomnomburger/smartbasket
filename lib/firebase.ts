@@ -30,9 +30,17 @@ export const getUserShoppingList = (userId: string, callback: (items: ShoppingIt
   })
 }
 
-export const addShoppingItem = async (userId: string, item: Omit<ShoppingItem, "id">) => {
-  const newItemRef = doc(collection(db, "Users", userId, "ShoppingList"))
-  await setDoc(newItemRef, item)
+export const addShoppingItem = async (userId: string, item: Omit<ShoppingItem, "id">): Promise<string | null> => {
+  try {
+    console.log("Adding shopping item:", item)
+    const newItemRef = doc(collection(db, "Users", userId, "ShoppingList"))
+    await setDoc(newItemRef, item)
+    console.log("Shopping item added successfully, ID:", newItemRef.id)
+    return newItemRef.id
+  } catch (error) {
+    console.error("Error adding shopping item:", error)
+    return null
+  }
 }
 
 export const updateShoppingItem = async (userId: string, itemId: string, updates: Partial<ShoppingItem>) => {
@@ -54,5 +62,22 @@ export interface ShoppingItem {
   storeId: string
   price: string
   addedAt: string
+  sourceIconUrl: string // Add this new field
+}
+
+export const updateProductInfo = async (
+  userId: string,
+  itemId: string,
+  updates: Partial<ShoppingItem>,
+): Promise<void> => {
+  try {
+    console.log("Updating product info:", { userId, itemId, updates })
+    const itemRef = doc(db, "Users", userId, "ShoppingList", itemId)
+    await updateDoc(itemRef, updates)
+    console.log("Product info updated successfully")
+  } catch (error) {
+    console.error("Error updating product info:", error)
+    throw error
+  }
 }
 
