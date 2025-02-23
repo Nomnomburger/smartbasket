@@ -5,6 +5,7 @@ import { motion } from "framer-motion"
 import { X, Info, Check, Loader2 } from "lucide-react"
 import { useAuthState } from "react-firebase-hooks/auth"
 import { auth, addShoppingItem } from "@/lib/firebase"
+import { useLocation } from "@/lib/useLocation"
 
 interface NewItemModalProps {
   isOpen: boolean
@@ -16,12 +17,17 @@ export function NewItemModal({ isOpen, onClose, onAdd }: NewItemModalProps) {
   const [itemName, setItemName] = useState("")
   const [isLoading, setIsLoading] = useState(false)
   const [user] = useAuthState(auth)
+  const { location } = useLocation()
 
   const handleSubmit = async () => {
     if (itemName.trim() && user) {
       setIsLoading(true)
       try {
         console.log("Starting item addition process...")
+
+        // Construct the query with location
+        const locationString = location ? `in ${location.latitude.toFixed(2)},${location.longitude.toFixed(2)}` : ""
+        const fullQuery = `${itemName.trim()} ${locationString}`.trim()
 
         // Search for product info first
         console.log("Fetching product info...")
@@ -30,7 +36,7 @@ export function NewItemModal({ isOpen, onClose, onAdd }: NewItemModalProps) {
           headers: {
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({ query: itemName.trim() }),
+          body: JSON.stringify({ query: fullQuery }),
         })
 
         if (!response.ok) {
@@ -43,7 +49,7 @@ export function NewItemModal({ isOpen, onClose, onAdd }: NewItemModalProps) {
 
         // Add the item to Firebase with the product info
         console.log("Adding item to Firebase with product info...")
-        const newItem = await addShoppingItem(user.uid, {
+        const newItemId = await addShoppingItem(user.uid, {
           itemName: itemName.trim(),
           checked: false,
           onSale: false,
@@ -51,11 +57,15 @@ export function NewItemModal({ isOpen, onClose, onAdd }: NewItemModalProps) {
           price: productInfo.lowestPrice || "0.00",
           addedAt: new Date().toISOString(),
         })
-        console.log("Item added to Firebase:", newItem)
 
-        onAdd(itemName.trim())
-        setItemName("")
-        onClose()
+        if (newItemId) {
+          console.log("Item added to Firebase:", newItemId)
+          onAdd(itemName.trim())
+          setItemName("")
+          onClose()
+        } else {
+          throw new Error("Failed to add item to Firebase")
+        }
       } catch (error) {
         console.error("Error adding item:", error)
         console.error("Error details:", JSON.stringify(error, Object.getOwnPropertyNames(error)))

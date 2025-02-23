@@ -52,7 +52,8 @@ export async function POST(req: Request) {
     const model = genAI.getGenerativeModel({ model: "gemini-pro" })
 
     const prompt = `
-      Analyze the following Google Shopping results and find the store with the lowest price for the item "${query}".
+      Analyze the following Google Shopping results for the query "${query}".
+      Find the store with the lowest price for the item.
       Only consider the top 5 results. If there are sponsored results, ignore them.
       Provide the result in the following JSON format:
       {

@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from "framer-motion"
 import { X, Share2, ShoppingBasket, Plus, Search, Store, List, Minimize2, Bus } from "lucide-react"
 import Image from "next/image"
 import { useEffect, useState } from "react"
-import { addShoppingItem, type ShoppingItem } from "@/lib/firebase"
+import type { ShoppingItem } from "@/lib/firebase"
 import { useAuthState } from "react-firebase-hooks/auth"
 import { auth } from "@/lib/firebase"
 import { NewItemModal } from "./new-item-modal"
@@ -31,13 +31,15 @@ export function SmartBasket({ onClose, onProductClick, shoppingItems, onItemChec
   const [storesWithCounts, setStoresWithCounts] = useState<{ [storeId: string]: number }>({})
   const [isNewItemModalOpen, setIsNewItemModalOpen] = useState(false)
 
+  const validShoppingItems = shoppingItems.filter((item) => item.price && item.storeId)
+
   useEffect(() => {
     document.body.style.overflow = "hidden"
-    updateStoreCounts(shoppingItems)
+    updateStoreCounts(validShoppingItems)
     return () => {
       document.body.style.overflow = "unset"
     }
-  }, [shoppingItems])
+  }, [validShoppingItems])
 
   useEffect(() => {
     localStorage.setItem("smartBasketViewMode", viewMode)
@@ -57,28 +59,14 @@ export function SmartBasket({ onClose, onProductClick, shoppingItems, onItemChec
   }
 
   const toggleItemCheck = (itemId: string) => {
-    const item = shoppingItems.find((item) => item.id === itemId)
+    const item = validShoppingItems.find((item) => item.id === itemId)
     if (item) {
       onItemCheck(itemId, !item.checked)
     }
   }
 
-  const handleAddItem = async (itemName: string) => {
-    if (user) {
-      const newItem: Omit<ShoppingItem, "id"> = {
-        itemName,
-        checked: false,
-        onSale: false,
-        storeId: "Unknown",
-        price: "0.00",
-        addedAt: new Date().toISOString(),
-      }
-      await addShoppingItem(user.uid, newItem)
-    }
-  }
-
-  const uncheckedItems = shoppingItems.filter((item) => !item.checked)
-  const checkedItems = shoppingItems.filter((item) => item.checked)
+  const uncheckedItems = validShoppingItems.filter((item) => !item.checked)
+  const checkedItems = validShoppingItems.filter((item) => item.checked)
   const totalUncheckedItems = uncheckedItems.length
   const onSaleItems = uncheckedItems.filter((item) => item.onSale).length
 
@@ -153,7 +141,7 @@ export function SmartBasket({ onClose, onProductClick, shoppingItems, onItemChec
                 </div>
 
                 <div className="space-y-0">
-                  {shoppingItems
+                  {validShoppingItems
                     .filter((item) => item.storeId === selectedStore)
                     .map((item, index, array) => (
                       <div key={item.id} className="cursor-pointer" onClick={() => onProductClick(item.id)}>
@@ -383,7 +371,15 @@ export function SmartBasket({ onClose, onProductClick, shoppingItems, onItemChec
       )}
 
       <AnimatePresence>
-        <NewItemModal isOpen={isNewItemModalOpen} onClose={() => setIsNewItemModalOpen(false)} onAdd={handleAddItem} />
+        <NewItemModal
+          isOpen={isNewItemModalOpen}
+          onClose={() => setIsNewItemModalOpen(false)}
+          onAdd={(itemName) => {
+            // The item is already added in the NewItemModal component
+            // We just need to close the modal here
+            setIsNewItemModalOpen(false)
+          }}
+        />
       </AnimatePresence>
     </motion.div>
   )

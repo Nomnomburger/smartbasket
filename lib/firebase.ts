@@ -30,7 +30,7 @@ export const getUserShoppingList = (userId: string, callback: (items: ShoppingIt
   })
 }
 
-export const addShoppingItem = async (userId: string, item: Omit<ShoppingItem, "id">): Promise<string> => {
+export const addShoppingItem = async (userId: string, item: Omit<ShoppingItem, "id">): Promise<string | null> => {
   try {
     console.log("Adding shopping item:", item)
     const newItemRef = doc(collection(db, "Users", userId, "ShoppingList"))
@@ -39,7 +39,7 @@ export const addShoppingItem = async (userId: string, item: Omit<ShoppingItem, "
     return newItemRef.id
   } catch (error) {
     console.error("Error adding shopping item:", error)
-    throw error
+    return null
   }
 }
 
