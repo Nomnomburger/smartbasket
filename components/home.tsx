@@ -3,7 +3,7 @@
 import { motion } from "framer-motion"
 import { MoreVertical, ArrowRight, Share2, Info, Plus, Search, User, Sun, ShoppingBasket, Tag } from "lucide-react"
 import type { User as FirebaseUser } from "firebase/auth"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import Image from "next/image"
 import { useLocation } from "@/lib/useLocation"
 import { ContributeCard } from "./contribute-card"
@@ -12,6 +12,8 @@ import type { NearbyStore } from "@/lib/useLocation"
 import { NewItemModal } from "./new-item-modal"
 import { addShoppingItem } from "@/lib/firebase"
 import { InfoModal } from "./info-modal"
+import { InteractiveChip } from "./interactive-chip"
+import { getUserShoppingList } from "@/lib/firebase"
 
 interface HomeProps {
   onSmartBasketClick: () => void
@@ -53,6 +55,16 @@ export function Home({
   const [isPointsInfoModalOpen, setIsPointsInfoModalOpen] = useState(false)
   const [isNearbyItemsModalOpen, setIsNearbyItemsModalOpen] = useState(false)
   const [isTodayOptionsModalOpen, setIsTodayOptionsModalOpen] = useState(false)
+  const [todayItems, setTodayItems] = useState<ShoppingItem[]>([])
+
+  useEffect(() => {
+    if (user) {
+      const unsubscribe = getUserShoppingList(user.uid, (items) => {
+        setTodayItems(items.filter((item) => item.onSale))
+      })
+      return () => unsubscribe()
+    }
+  }, [user])
 
   const handleAddItem = async (itemName: string) => {
     if (user) {
@@ -77,6 +89,25 @@ export function Home({
   const handleDismissStore = (storeId: string) => {
     setDismissedStores((prev) => [...prev, storeId])
   }
+
+  const suggestedItems = [
+    "Yogurt",
+    "Apples",
+    "Chips",
+    "Oranges",
+    "Bread",
+    "Milk",
+    "Eggs",
+    "Cheese",
+    "Bananas",
+    "Chicken",
+    "Pasta",
+    "Tomatoes",
+    "Cereal",
+    "Coffee",
+    "Carrots",
+    "Lettuce",
+  ]
 
   return (
     <motion.main
@@ -174,14 +205,15 @@ export function Home({
           </h2>
         </motion.div>
         <motion.div layoutId="today-items" className="flex gap-1 overflow-x-auto -mx-4 px-4 pb-2">
-          {["Yogurt", "Apples", "Chips", "Oranges"].map((item) => (
-            <button
+          {suggestedItems.map((item) => (
+            <InteractiveChip
               key={item}
-              className="flex items-center gap-2 bg-white text-black px-4 h-[42px] rounded-full whitespace-nowrap text-base"
-            >
-              {item}
-              <Plus className="h-4 w-4" />
-            </button>
+              item={item}
+              onAdd={(item) => console.log(`Added ${item} to shopping list`)}
+              onRemove={(item) => console.log(`Removed ${item} from shopping list`)}
+              isAdded={todayItems.some((todayItem) => todayItem.itemName === item)}
+              shoppingItems={todayItems}
+            />
           ))}
         </motion.div>
       </motion.div>

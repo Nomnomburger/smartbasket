@@ -1,10 +1,14 @@
 "use client"
 
 import { motion } from "framer-motion"
-import { X, MoreVertical, Plus, Sun } from "lucide-react"
+import { X, MoreVertical, Sun } from "lucide-react"
 import Image from "next/image"
 import { useEffect, useState } from "react"
 import { InfoModal } from "./info-modal"
+import { InteractiveChip } from "./interactive-chip"
+import { useAuthState } from "react-firebase-hooks/auth"
+import { auth, getUserShoppingList } from "@/lib/firebase"
+import type { ShoppingItem } from "@/lib/firebase"
 
 interface TodayProps {
   onClose: () => void
@@ -12,13 +16,50 @@ interface TodayProps {
 
 export function Today({ onClose }: TodayProps) {
   const [isInfoModalOpen, setIsInfoModalOpen] = useState(false)
+  const [user] = useAuthState(auth)
+  const [shoppingItems, setShoppingItems] = useState<ShoppingItem[]>([])
 
   useEffect(() => {
     document.body.style.overflow = "hidden"
+    if (user) {
+      const unsubscribe = getUserShoppingList(user.uid, setShoppingItems)
+      return () => {
+        document.body.style.overflow = "unset"
+        unsubscribe()
+      }
+    }
     return () => {
       document.body.style.overflow = "unset"
     }
-  }, [])
+  }, [user])
+
+  const suggestedItems = [
+    "Yogurt",
+    "Apples",
+    "Chips",
+    "Oranges",
+    "Bread",
+    "Milk",
+    "Eggs",
+    "Cheese",
+    "Bananas",
+    "Chicken",
+    "Pasta",
+    "Tomatoes",
+    "Cereal",
+    "Coffee",
+    "Carrots",
+    "Lettuce",
+  ]
+
+  const handleAddItem = (item: string) => {
+    console.log(`Added ${item} to shopping list`)
+  }
+
+  const handleRemoveItem = (item: string) => {
+    console.log(`Removed ${item} from shopping list`)
+    // You might want to update the local state or trigger a re-fetch of shopping items here
+  }
 
   return (
     <motion.div layoutId="today-card" className="fixed inset-0 bg-[#16FFA6] text-black overflow-hidden flex flex-col">
@@ -58,15 +99,16 @@ export function Today({ onClose }: TodayProps) {
           </h2>
         </motion.div>
 
-        <motion.div layoutId="today-items" className="flex gap-1 overflow-x-auto -mx-4 px-4">
-          {["Yogurt", "Apples", "Chips", "Oranges"].map((item) => (
-            <button
+        <motion.div layoutId="today-items" className="flex flex-wrap gap-2 overflow-x-auto -mx-4 px-4">
+          {suggestedItems.map((item) => (
+            <InteractiveChip
               key={item}
-              className="flex items-center gap-2 bg-white text-black px-4 h-[42px] rounded-full whitespace-nowrap text-base"
-            >
-              {item}
-              <Plus className="h-4 w-4" />
-            </button>
+              item={item}
+              onAdd={handleAddItem}
+              onRemove={handleRemoveItem}
+              isAdded={shoppingItems.some((shoppingItem) => shoppingItem.itemName === item)}
+              shoppingItems={shoppingItems}
+            />
           ))}
         </motion.div>
 
