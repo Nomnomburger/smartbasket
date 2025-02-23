@@ -11,6 +11,7 @@ import { GeminiInsightCard } from "./gemini-insight-card"
 import type { NearbyStore } from "@/lib/useLocation"
 import { NewItemModal } from "./new-item-modal"
 import { addShoppingItem } from "@/lib/firebase"
+import { InfoModal } from "./info-modal"
 
 interface HomeProps {
   onSmartBasketClick: () => void
@@ -46,8 +47,12 @@ export function Home({
   const [showSignOutPopup, setShowSignOutPopup] = useState(false)
   const { nearbyStores, error: locationError } = useLocation(2) // 2km radius
   const [selectedStore, setSelectedStore] = useState<NearbyStore | null>(null)
-  const [submittedStores, setSubmittedStores] = useState<string[]>([])
+  const [dismissedStores, setDismissedStores] = useState<string[]>([])
   const [isNewItemModalOpen, setIsNewItemModalOpen] = useState(false)
+  const [isShareModalOpen, setIsShareModalOpen] = useState(false)
+  const [isPointsInfoModalOpen, setIsPointsInfoModalOpen] = useState(false)
+  const [isNearbyItemsModalOpen, setIsNearbyItemsModalOpen] = useState(false)
+  const [isTodayOptionsModalOpen, setIsTodayOptionsModalOpen] = useState(false)
 
   const handleAddItem = async (itemName: string) => {
     if (user) {
@@ -67,6 +72,10 @@ export function Home({
         // You might want to show an error message to the user here
       }
     }
+  }
+
+  const handleDismissStore = (storeId: string) => {
+    setDismissedStores((prev) => [...prev, storeId])
   }
 
   return (
@@ -122,13 +131,14 @@ export function Home({
 
       {/* Contribute Cards - show for each nearby store */}
       {nearbyStores
-        .filter((store) => !submittedStores.includes(store.id))
+        .filter((store) => !dismissedStores.includes(store.id))
         .map((store) => (
           <ContributeCard
             key={store.id}
             store={store}
             onStoreSelect={setSelectedStore}
-            onContribute={() => setSubmittedStores((prev) => [...prev, store.id])}
+            onContribute={() => handleDismissStore(store.id)}
+            onDismiss={() => handleDismissStore(store.id)}
           />
         ))}
 
@@ -141,7 +151,10 @@ export function Home({
           </motion.div>
           <div className="flex gap-2">
             <motion.div layoutId="today-more">
-              <button className="h-[42px] w-[42px] rounded-full bg-black/10 flex items-center justify-center">
+              <button
+                className="h-[42px] w-[42px] rounded-full bg-black/10 flex items-center justify-center"
+                onClick={() => setIsTodayOptionsModalOpen(true)}
+              >
                 <MoreVertical className="h-5 w-5" />
               </button>
             </motion.div>
@@ -188,7 +201,10 @@ export function Home({
           </motion.div>
           <div className="flex gap-2">
             <motion.div layoutId="smartbasket-share">
-              <button className="h-[42px] w-[42px] rounded-full bg-black/10 flex items-center justify-center">
+              <button
+                className="h-[42px] w-[42px] rounded-full bg-black/10 flex items-center justify-center"
+                onClick={() => setIsShareModalOpen(true)}
+              >
                 <Share2 className="h-5 w-5" />
               </button>
             </motion.div>
@@ -249,7 +265,10 @@ export function Home({
             <Plus className="h-5 w-5" />
             Add to list
           </button>
-          <button className="flex items-center justify-center gap-2 bg-white rounded-full h-[42px] px-4 flex-1 text-base">
+          <button
+            className="flex items-center justify-center gap-2 bg-white rounded-full h-[42px] px-4 flex-1 text-base"
+            onClick={() => setIsNearbyItemsModalOpen(true)}
+          >
             <Search className="h-5 w-5" />
             Nearby items
           </button>
@@ -265,7 +284,10 @@ export function Home({
           </motion.div>
           <div className="flex gap-2">
             <motion.div layoutId="points-info">
-              <button className="h-[42px] w-[42px] rounded-full bg-black/10 flex items-center justify-center">
+              <button
+                className="h-[42px] w-[42px] rounded-full bg-black/10 flex items-center justify-center"
+                onClick={() => setIsPointsInfoModalOpen(true)}
+              >
                 <Info className="h-5 w-5" />
               </button>
             </motion.div>
@@ -299,6 +321,32 @@ export function Home({
 
       {/* New Item Modal */}
       <NewItemModal isOpen={isNewItemModalOpen} onClose={() => setIsNewItemModalOpen(false)} onAdd={handleAddItem} />
+
+      {/* Info Modals */}
+      <InfoModal
+        isOpen={isShareModalOpen}
+        onClose={() => setIsShareModalOpen(false)}
+        header="Share basket"
+        description="Basket sharing is coming soon - Winston"
+      />
+      <InfoModal
+        isOpen={isPointsInfoModalOpen}
+        onClose={() => setIsPointsInfoModalOpen(false)}
+        header="Rewards info"
+        description="Earn rewards by helping crowdsource data. Redeemable rewards are coming soon!"
+      />
+      <InfoModal
+        isOpen={isNearbyItemsModalOpen}
+        onClose={() => setIsNearbyItemsModalOpen(false)}
+        header="Nearby items"
+        description="Finding nearby items is coming soon - Winston"
+      />
+      <InfoModal
+        isOpen={isTodayOptionsModalOpen}
+        onClose={() => setIsTodayOptionsModalOpen(false)}
+        header="Options"
+        description="Some options will be available soon - Winston"
+      />
     </motion.main>
   )
 }

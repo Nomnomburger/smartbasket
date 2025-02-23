@@ -8,6 +8,7 @@ import type { ShoppingItem } from "@/lib/firebase"
 import { useAuthState } from "react-firebase-hooks/auth"
 import { auth } from "@/lib/firebase"
 import { NewItemModal } from "./new-item-modal"
+import { InfoModal } from "./info-modal"
 
 interface SmartBasketProps {
   onClose: () => void
@@ -30,6 +31,8 @@ export function SmartBasket({ onClose, onProductClick, shoppingItems, onItemChec
   const [selectedStore, setSelectedStore] = useState<string | null>(null)
   const [storesWithCounts, setStoresWithCounts] = useState<{ [storeId: string]: number }>({})
   const [isNewItemModalOpen, setIsNewItemModalOpen] = useState(false)
+  const [isShareModalOpen, setIsShareModalOpen] = useState(false)
+  const [isNearbyItemsModalOpen, setIsNearbyItemsModalOpen] = useState(false)
 
   const validShoppingItems = useMemo(() => shoppingItems.filter((item) => item.price && item.storeId), [shoppingItems])
 
@@ -86,7 +89,10 @@ export function SmartBasket({ onClose, onProductClick, shoppingItems, onItemChec
           </motion.div>
           <div className="flex gap-2">
             <motion.div layoutId="smartbasket-share">
-              <button className="h-[42px] w-[42px] rounded-full bg-black/10 flex items-center justify-center">
+              <button
+                className="h-[42px] w-[42px] rounded-full bg-black/10 flex items-center justify-center"
+                onClick={() => setIsShareModalOpen(true)}
+              >
                 <Share2 className="h-5 w-5" />
               </button>
             </motion.div>
@@ -115,13 +121,24 @@ export function SmartBasket({ onClose, onProductClick, shoppingItems, onItemChec
               <div className="p-4">
                 <div className="flex items-start justify-between mb-6">
                   <div className="flex items-center gap-4">
-                    <Image
-                      src="/placeholder.svg?height=56&width=56"
-                      alt={`${selectedStore} logo`}
-                      width={56}
-                      height={56}
-                      className="rounded-full"
-                    />
+                    <div className="relative w-[42px] h-[42px] rounded-full overflow-hidden">
+                      {validShoppingItems.find((item) => item.storeId === selectedStore)?.sourceIconUrl ? (
+                        <Image
+                          src={
+                            validShoppingItems.find((item) => item.storeId === selectedStore)?.sourceIconUrl ||
+                            "/placeholder.svg" ||
+                            "/placeholder.svg"
+                          }
+                          alt={`${selectedStore} logo`}
+                          layout="fill"
+                          objectFit="cover"
+                        />
+                      ) : (
+                        <div className="w-full h-full bg-gray-200 flex items-center justify-center">
+                          <Store className="h-5 w-5 text-gray-400" />
+                        </div>
+                      )}
+                    </div>
                     <h2 className="text-2xl font-medium">{selectedStore}</h2>
                   </div>
                   <button
@@ -257,23 +274,18 @@ export function SmartBasket({ onClose, onProductClick, shoppingItems, onItemChec
                           </div>
                           <div className="flex items-center justify-between">
                             <span className="text-base">{count} items</span>
-                            <div className="relative w-[42px] h-[42px] rounded-full bg-gray-200 overflow-hidden">
+                            <div className="relative w-[42px] h-[42px] rounded-full overflow-hidden">
                               {storeItem && storeItem.sourceIconUrl ? (
                                 <Image
                                   src={storeItem.sourceIconUrl || "/placeholder.svg"}
                                   alt={`${storeId} logo`}
-                                  width={42}
-                                  height={42}
-                                  className="rounded-full object-cover"
+                                  layout="fill"
+                                  objectFit="cover"
                                 />
                               ) : (
-                                <Image
-                                  src="/placeholder.svg?height=42&width=42"
-                                  alt={`${storeId} logo`}
-                                  width={42}
-                                  height={42}
-                                  className="rounded-full"
-                                />
+                                <div className="w-full h-full bg-gray-200 flex items-center justify-center">
+                                  <Store className="h-5 w-5 text-gray-400" />
+                                </div>
                               )}
                             </div>
                           </div>
@@ -379,7 +391,10 @@ export function SmartBasket({ onClose, onProductClick, shoppingItems, onItemChec
               <Plus className="h-5 w-5" />
               Add to list
             </button>
-            <button className="flex items-center justify-center gap-2 bg-[#16FFA6] rounded-full h-[42px] px-4 flex-1 text-base">
+            <button
+              onClick={() => setIsNearbyItemsModalOpen(true)}
+              className="flex items-center justify-center gap-2 bg-[#16FFA6] rounded-full h-[42px] px-4 flex-1 text-base"
+            >
               <Search className="h-5 w-5" />
               Nearby items
             </button>
@@ -398,6 +413,20 @@ export function SmartBasket({ onClose, onProductClick, shoppingItems, onItemChec
           }}
         />
       </AnimatePresence>
+
+      {/* Info Modals */}
+      <InfoModal
+        isOpen={isShareModalOpen}
+        onClose={() => setIsShareModalOpen(false)}
+        header="Share basket"
+        description="Basket sharing is coming soon - Winston"
+      />
+      <InfoModal
+        isOpen={isNearbyItemsModalOpen}
+        onClose={() => setIsNearbyItemsModalOpen(false)}
+        header="Nearby items"
+        description="Finding nearby items is coming soon - Winston"
+      />
     </motion.div>
   )
 }

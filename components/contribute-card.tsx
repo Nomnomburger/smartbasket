@@ -4,22 +4,30 @@ import { motion } from "framer-motion"
 import { Link, MoreVertical, MapPin, Camera, Frown } from "lucide-react"
 import { useState } from "react"
 import { ContributeModal } from "./contribute-modal"
+import { InfoModal } from "./info-modal"
 import type { NearbyStore } from "@/lib/useLocation"
 
 interface ContributeCardProps {
   store: NearbyStore
   onStoreSelect?: (store: NearbyStore) => void
   onContribute: () => void
+  onDismiss: () => void
 }
 
-export function ContributeCard({ store, onStoreSelect, onContribute }: ContributeCardProps) {
+export function ContributeCard({ store, onStoreSelect, onContribute, onDismiss }: ContributeCardProps) {
   const [isModalOpen, setIsModalOpen] = useState(false)
+  const [isOptionsModalOpen, setIsOptionsModalOpen] = useState(false)
+  const [isLocationModalOpen, setIsLocationModalOpen] = useState(false)
 
   const handleYesClick = () => {
     if (onStoreSelect) {
       onStoreSelect(store)
     }
     setIsModalOpen(true)
+  }
+
+  const handleNopeClick = () => {
+    onDismiss()
   }
 
   return (
@@ -31,10 +39,16 @@ export function ContributeCard({ store, onStoreSelect, onContribute }: Contribut
             <span className="text-sm font-medium">CONTRIBUTE</span>
           </div>
           <div className="flex gap-2">
-            <button className="h-[42px] w-[42px] rounded-full bg-black/10 flex items-center justify-center">
+            <button
+              className="h-[42px] w-[42px] rounded-full bg-black/10 flex items-center justify-center"
+              onClick={() => setIsOptionsModalOpen(true)}
+            >
               <MoreVertical className="h-5 w-5" />
             </button>
-            <button className="h-[42px] w-[42px] rounded-full bg-black/10 flex items-center justify-center">
+            <button
+              className="h-[42px] w-[42px] rounded-full bg-black/10 flex items-center justify-center"
+              onClick={() => setIsLocationModalOpen(true)}
+            >
               <MapPin className="h-5 w-5" />
             </button>
           </div>
@@ -55,7 +69,10 @@ export function ContributeCard({ store, onStoreSelect, onContribute }: Contribut
             <Camera className="h-5 w-5" />
             Yes!
           </button>
-          <button className="flex items-center justify-center gap-2 bg-white text-black rounded-full h-[42px] px-4 flex-1">
+          <button
+            onClick={handleNopeClick}
+            className="flex items-center justify-center gap-2 bg-white text-black rounded-full h-[42px] px-4 flex-1"
+          >
             <Frown className="h-5 w-5" />
             Nope
           </button>
@@ -69,6 +86,20 @@ export function ContributeCard({ store, onStoreSelect, onContribute }: Contribut
           onContribute()
         }}
         store={store}
+      />
+
+      <InfoModal
+        isOpen={isOptionsModalOpen}
+        onClose={() => setIsOptionsModalOpen(false)}
+        header="Options"
+        description="Some options will be available soon - Winston"
+      />
+
+      <InfoModal
+        isOpen={isLocationModalOpen}
+        onClose={() => setIsLocationModalOpen(false)}
+        header="Location options"
+        description="Location privacy settings coming soon"
       />
     </>
   )

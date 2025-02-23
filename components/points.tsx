@@ -2,13 +2,16 @@
 
 import { motion } from "framer-motion"
 import { X, Info, Tag } from "lucide-react"
-import { useEffect } from "react"
+import { useEffect, useState } from "react"
+import { InfoModal } from "./info-modal"
 
 interface PointsProps {
   onClose: () => void
 }
 
 export function Points({ onClose }: PointsProps) {
+  const [isInfoModalOpen, setIsInfoModalOpen] = useState(false)
+
   useEffect(() => {
     document.body.style.overflow = "hidden"
     return () => {
@@ -27,7 +30,10 @@ export function Points({ onClose }: PointsProps) {
           </motion.div>
           <div className="flex gap-2">
             <motion.div layoutId="points-info">
-              <button className="h-[42px] w-[42px] rounded-full bg-black/10 flex items-center justify-center">
+              <button
+                className="h-[42px] w-[42px] rounded-full bg-black/10 flex items-center justify-center"
+                onClick={() => setIsInfoModalOpen(true)}
+              >
                 <Info className="h-5 w-5" />
               </button>
             </motion.div>
@@ -56,6 +62,13 @@ export function Points({ onClose }: PointsProps) {
           </div>
         </motion.div>
       </div>
+
+      <InfoModal
+        isOpen={isInfoModalOpen}
+        onClose={() => setIsInfoModalOpen(false)}
+        header="Rewards info"
+        description="Earn rewards by helping crowdsource data. Redeemable rewards are coming soon!"
+      />
     </motion.div>
   )
 }

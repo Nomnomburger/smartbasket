@@ -52,7 +52,7 @@ export function SignIn({ onSignIn }: SignInProps) {
         <button
           onClick={handleSignIn}
           disabled={isLoading}
-          className="w-full bg-[#16FFA6] text-black hover:bg-[#14e095] h-[42px] rounded-full flex items-center justify-center gap-2 text-base"
+          className="mx-auto px-6 bg-white text-black hover:bg-gray-100 h-[42px] rounded-full flex items-center justify-center gap-2 text-base border border-gray-300"
         >
           {isLoading ? (
             "Signing in..."

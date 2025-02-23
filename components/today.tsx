@@ -3,13 +3,16 @@
 import { motion } from "framer-motion"
 import { X, MoreVertical, Plus, Sun } from "lucide-react"
 import Image from "next/image"
-import { useEffect } from "react"
+import { useEffect, useState } from "react"
+import { InfoModal } from "./info-modal"
 
 interface TodayProps {
   onClose: () => void
 }
 
 export function Today({ onClose }: TodayProps) {
+  const [isInfoModalOpen, setIsInfoModalOpen] = useState(false)
+
   useEffect(() => {
     document.body.style.overflow = "hidden"
     return () => {
@@ -28,7 +31,10 @@ export function Today({ onClose }: TodayProps) {
           </motion.div>
           <div className="flex gap-2">
             <motion.div layoutId="today-more">
-              <button className="h-[42px] w-[42px] rounded-full bg-black/10 flex items-center justify-center">
+              <button
+                className="h-[42px] w-[42px] rounded-full bg-black/10 flex items-center justify-center"
+                onClick={() => setIsInfoModalOpen(true)}
+              >
                 <MoreVertical className="h-5 w-5" />
               </button>
             </motion.div>
@@ -95,6 +101,13 @@ export function Today({ onClose }: TodayProps) {
           </div>
         </div>
       </div>
+
+      <InfoModal
+        isOpen={isInfoModalOpen}
+        onClose={() => setIsInfoModalOpen(false)}
+        header="Options"
+        description="Some options will be available soon - Winston"
+      />
     </motion.div>
   )
 }
