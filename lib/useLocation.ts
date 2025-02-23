@@ -44,7 +44,7 @@ export interface UseLocationResult {
   nearbyStores: NearbyStore[]
 }
 
-export function useLocation(maxDistance = 2) {
+export function useLocation(maxDistance = 0.5) {
   const [location, setLocation] = useState<Location | null>(null)
   const [city, setCity] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)

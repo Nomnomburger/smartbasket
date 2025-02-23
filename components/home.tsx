@@ -45,7 +45,7 @@ export function Home({
   const uncheckedItems = shoppingItems.filter((item) => !item.checked)
   const onSaleItems = uncheckedItems.filter((item) => item.onSale)
   const [showSignOutPopup, setShowSignOutPopup] = useState(false)
-  const { nearbyStores, error: locationError } = useLocation(2) // 2km radius
+  const { nearbyStores, error: locationError } = useLocation(0.5) // 0.5km radius
   const [selectedStore, setSelectedStore] = useState<NearbyStore | null>(null)
   const [dismissedStores, setDismissedStores] = useState<string[]>([])
   const [isNewItemModalOpen, setIsNewItemModalOpen] = useState(false)
