@@ -300,13 +300,16 @@ export function SmartBasket({ onClose, onProductClick, shoppingItems, onItemChec
                               />
                               <span className="text-base font-normal">{item.itemName}</span>
                             </div>
-                            <span
-                              className={`text-xs font-[300] h-8 px-3 rounded-full flex items-center ${
-                                item.onSale ? "bg-[#CFE6BE]" : "bg-black/5"
-                              }`}
-                            >
-                              {item.storeId}
-                            </span>
+                            <div className="flex flex-col items-end">
+                              <span
+                                className={`text-xs font-[300] h-6 px-2 rounded-full flex items-center ${
+                                  item.onSale ? "bg-[#CFE6BE]" : "bg-black/5"
+                                }`}
+                              >
+                                {item.storeId}
+                              </span>
+                              <span className="text-sm font-medium mt-1">${item.price}</span>
+                            </div>
                           </div>
                           {index < uncheckedItems.length - 1 && (
                             <div className="mx-4">

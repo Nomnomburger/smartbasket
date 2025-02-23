@@ -141,7 +141,7 @@ export function ProductDetails({ itemId, onClose, onItemCheck, onDelete, shoppin
                 <p className="text-sm text-gray-600">{store.distance}</p>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-xl">${store.price}</span>
+                <span className="text-xl">${store.storeId === item.storeId ? item.price : store.price}</span>
                 <Image
                   src={store.logo || "/placeholder.svg"}
                   alt={`${store.storeId} logo`}
