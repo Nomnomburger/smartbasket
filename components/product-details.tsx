@@ -1,7 +1,7 @@
 "use client"
 
 import { motion } from "framer-motion"
-import { X, Pencil, Package } from "lucide-react"
+import { X, Trash, Package } from "lucide-react"
 import Image from "next/image"
 import { useEffect } from "react"
 
@@ -9,6 +9,7 @@ interface ProductDetailsProps {
   itemId: string
   onClose: () => void
   onItemCheck: (itemId: string, checked: boolean) => void
+  onDelete: (itemId: string) => void
   shoppingItems: ShoppingItem[]
 }
 
@@ -30,7 +31,7 @@ interface StoreAvailability {
   logo: string
 }
 
-export function ProductDetails({ itemId, onClose, onItemCheck, shoppingItems }: ProductDetailsProps) {
+export function ProductDetails({ itemId, onClose, onItemCheck, onDelete, shoppingItems }: ProductDetailsProps) {
   const item = shoppingItems.find((item) => item.id === itemId)
 
   // Simulated nearby stores data - in real implementation, this would come from the database
@@ -95,8 +96,16 @@ export function ProductDetails({ itemId, onClose, onItemCheck, shoppingItems }: 
             <span className="text-sm font-medium">ITEM</span>
           </div>
           <div className="flex gap-2">
-            <button className="h-[42px] w-[42px] rounded-full bg-black/10 flex items-center justify-center">
-              <Pencil className="h-5 w-5" />
+            <button
+              className="h-[42px] w-[42px] rounded-full bg-black/10 flex items-center justify-center"
+              onClick={() => {
+                if (item) {
+                  onDelete(item.id)
+                  onClose() // This will trigger navigateBack in the parent component
+                }
+              }}
+            >
+              <Trash className="h-5 w-5" />
             </button>
             <button
               className="h-[42px] w-[42px] rounded-full bg-black flex items-center justify-center"
