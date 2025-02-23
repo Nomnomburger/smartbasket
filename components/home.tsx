@@ -9,6 +9,8 @@ import { useLocation } from "@/lib/useLocation"
 import { ContributeCard } from "./contribute-card"
 import { GeminiInsightCard } from "./gemini-insight-card"
 import type { NearbyStore } from "@/lib/useLocation"
+import { NewItemModal } from "./new-item-modal"
+import { addShoppingItem } from "@/lib/firebase"
 
 interface HomeProps {
   onSmartBasketClick: () => void
@@ -45,6 +47,27 @@ export function Home({
   const { nearbyStores, error: locationError } = useLocation(2) // 2km radius
   const [selectedStore, setSelectedStore] = useState<NearbyStore | null>(null)
   const [submittedStores, setSubmittedStores] = useState<string[]>([])
+  const [isNewItemModalOpen, setIsNewItemModalOpen] = useState(false)
+
+  const handleAddItem = async (itemName: string) => {
+    if (user) {
+      try {
+        await addShoppingItem(user.uid, {
+          itemName,
+          checked: false,
+          onSale: false,
+          storeId: "Unknown",
+          price: "0.00",
+          sourceIconUrl: "",
+          addedAt: new Date().toISOString(),
+        })
+        // Note: The shopping list will be automatically updated through the Firebase listener in the parent component
+      } catch (error) {
+        console.error("Error adding new item:", error)
+        // You might want to show an error message to the user here
+      }
+    }
+  }
 
   return (
     <motion.main
@@ -96,9 +119,6 @@ export function Home({
           <p>{locationError}</p>
         </div>
       )}
-
-      {/* Gemini Insight Card */}
-      {/* <GeminiInsightCard /> */}
 
       {/* Contribute Cards - show for each nearby store */}
       {nearbyStores
@@ -222,7 +242,10 @@ export function Home({
 
         {/* Bottom Actions */}
         <div className="flex gap-2 mt-4">
-          <button className="flex items-center justify-center gap-2 bg-white rounded-full h-[42px] px-4 flex-1 text-base">
+          <button
+            className="flex items-center justify-center gap-2 bg-white rounded-full h-[42px] px-4 flex-1 text-base"
+            onClick={() => setIsNewItemModalOpen(true)}
+          >
             <Plus className="h-5 w-5" />
             Add to list
           </button>
@@ -273,6 +296,9 @@ export function Home({
 
       {/* Gemini Insight Card */}
       <GeminiInsightCard />
+
+      {/* New Item Modal */}
+      <NewItemModal isOpen={isNewItemModalOpen} onClose={() => setIsNewItemModalOpen(false)} onAdd={handleAddItem} />
     </motion.main>
   )
 }

@@ -25,7 +25,9 @@ type ErrorType = "API_ERROR" | "PARSING_ERROR" | "INVALID_RESPONSE" | "UNKNOWN_E
 
 export function ContributeModal({ isOpen, onClose, store }: ContributeModalProps) {
   const [image, setImage] = useState<string | null>(null)
-  const [status, setStatus] = useState<"initial" | "uploading" | "analyzing" | "success" | "error">("initial")
+  const [status, setStatus] = useState<"initial" | "uploading" | "processing" | "analyzing" | "success" | "error">(
+    "initial",
+  )
   const [errorType, setErrorType] = useState<ErrorType | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [rawResponse, setRawResponse] = useState<string | null>(null)
@@ -41,6 +43,7 @@ export function ContributeModal({ isOpen, onClose, store }: ContributeModalProps
       const reader = new FileReader()
       reader.onloadend = () => {
         setImage(reader.result as string)
+        setStatus("processing")
         analyzeSaleImage(file)
       }
       reader.readAsDataURL(file)
@@ -192,17 +195,23 @@ export function ContributeModal({ isOpen, onClose, store }: ContributeModalProps
             </div>
           )}
 
-          {(status === "uploading" || status === "analyzing") && (
+          {(status === "uploading" || status === "processing" || status === "analyzing") && (
             <div className="flex flex-col items-center gap-4">
               {image && (
                 <div className="relative w-full aspect-square rounded-[20px] overflow-hidden mb-4">
                   <img src={image || "/placeholder.svg"} alt="Sale preview" className="w-full h-full object-cover" />
+                  <div className="absolute inset-0 bg-black/50 flex flex-col items-center justify-center">
+                    <Loader2 className="h-12 w-12 animate-spin text-white mb-4" />
+                    <span className="text-white text-xl">
+                      {status === "uploading"
+                        ? "Uploading photo..."
+                        : status === "processing"
+                          ? "Processing image..."
+                          : "Analyzing sale..."}
+                    </span>
+                  </div>
                 </div>
               )}
-              <div className="flex items-center gap-4">
-                <Loader2 className="h-6 w-6 animate-spin" />
-                <span className="text-xl">{status === "uploading" ? "Uploading photo..." : "Analyzing sale..."}</span>
-              </div>
             </div>
           )}
 

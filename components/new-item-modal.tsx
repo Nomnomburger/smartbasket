@@ -100,20 +100,20 @@ export function NewItemModal({ isOpen, onClose, onAdd }: NewItemModalProps) {
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex justify-between items-start mb-6">
-          <h2 className="text-2xl">New item</h2>
+          <h2 className="text-2xl text-black">New item</h2>
           <button
             onClick={onClose}
             className="h-[42px] w-[42px] rounded-full bg-black/5 flex items-center justify-center"
           >
-            <X className="h-5 w-5" />
+            <X className="h-5 w-5 text-black" />
           </button>
         </div>
 
         <div className="bg-[#C6E8F3] rounded-[20px] p-4 mb-6">
           <div className="flex gap-4">
-            <Info className="h-5 w-5 mt-1" />
+            <Info className="h-5 w-5 mt-1 text-black" />
             <div>
-              <h3 className="text-xl mb-2">Auto price comparison</h3>
+              <h3 className="text-xl mb-2 text-black">Auto price comparison</h3>
               <p className="text-[#4C4C4C]">
                 We'll automatically find the best price for this item{city ? ` in ${city}` : ""} and add it to your
                 shopping list!
@@ -122,13 +122,13 @@ export function NewItemModal({ isOpen, onClose, onAdd }: NewItemModalProps) {
           </div>
         </div>
 
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-2">
           <input
             type="text"
             value={itemName}
             onChange={(e) => setItemName(e.target.value)}
             placeholder="Type something"
-            className="flex-1 h-[56px] px-6 rounded-full bg-[#F6F5F8] text-xl"
+            className="flex-1 min-w-0 h-[72px] px-6 rounded-full bg-[#F6F5F8] text-xl font-light placeholder-gray-400 text-black"
             onKeyDown={(e) => {
               if (e.key === "Enter") {
                 handleSubmit()
@@ -138,9 +138,13 @@ export function NewItemModal({ isOpen, onClose, onAdd }: NewItemModalProps) {
           <button
             onClick={handleSubmit}
             disabled={!itemName.trim() || isLoading}
-            className="h-[56px] w-[56px] rounded-full bg-[#16FFA6] flex items-center justify-center disabled:opacity-50"
+            className="h-[72px] w-[72px] flex-shrink-0 rounded-full bg-[#16FFA6] flex items-center justify-center disabled:opacity-50"
           >
-            {isLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : <Check className="h-5 w-5" />}
+            {isLoading ? (
+              <Loader2 className="h-5 w-5 animate-spin text-black" />
+            ) : (
+              <Check className="h-5 w-5 text-black" />
+            )}
           </button>
         </div>
       </motion.div>
