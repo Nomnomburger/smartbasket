@@ -62,6 +62,7 @@ export interface ShoppingItem {
   storeId: string
   price: string
   addedAt: string
+  sourceIconUrl: string // Add this new field
 }
 
 export const updateProductInfo = async (

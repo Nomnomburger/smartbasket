@@ -49,31 +49,54 @@ export async function POST(req: Request) {
     console.log("Starting Gemini processing...")
     // Step 2: Process data with Gemini
     const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "")
-    const model = genAI.getGenerativeModel({ model: "gemini-pro" })
+    const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" })
 
     const prompt = `
-      Analyze the following Google Shopping results for the query "${query}".
-      Find the store with the lowest price for the item.
-      Only consider the top 5 results. If there are sponsored results, ignore them.
-      Provide the result in the following JSON format:
-      {
-        "itemName": "The name of the item",
-        "lowestPrice": "The lowest price found (as a string with 2 decimal places)",
-        "storeId": "The name of the store with the lowest price"
-      }
+  Analyze the following Google Shopping results for the query "${query}".
+  Find the store with the lowest price for the item.
+  Only consider the top 5 results. If there are sponsored results, ignore them.
+  Exclude online retailers like Amazon, eBay, or other e-commerce platforms.
+  Also exclude online delivery services like Instacart.
+  For grocery items, prioritize physical grocery stores or big-box stores like Walmart, Fresco, No Frills, etc.
+  Focus on physical store locations that customers can visit in person.
+  Provide the result in the following JSON format without any markdown formatting or code blocks:
+  {
+    "itemName": "The name of the item",
+    "lowestPrice": "The lowest price found (as a string with 2 decimal places)",
+    "storeId": "The name of the store with the lowest price",
+    "sourceIconUrl": "The URL of the source icon for the store with the lowest price"
+  }
 
-      Here are the results:
-      ${JSON.stringify(serpResult.shopping_results.slice(0, 5), null, 2)}
-    `
+  Here are the results:
+  ${JSON.stringify(serpResult.shopping_results.slice(0, 5), null, 2)}
+`
 
     const result = await model.generateContent(prompt)
     const response = await result.response
-    const analysisResult = JSON.parse(response.text())
+    let responseText = response.text()
+
+    // Remove any markdown formatting if present
+    responseText = responseText.replace(/```json\n|\n```/g, "").trim()
+
+    console.log("Raw Gemini response:", responseText)
+
+    let analysisResult
+    try {
+      analysisResult = JSON.parse(responseText)
+    } catch (parseError) {
+      console.error("Error parsing Gemini response:", parseError)
+      throw new Error("Invalid response format from Gemini")
+    }
 
     console.log("Gemini processing completed")
     console.log("Analysis Result:", analysisResult)
 
-    if (!analysisResult.itemName || !analysisResult.lowestPrice || !analysisResult.storeId) {
+    if (
+      !analysisResult.itemName ||
+      !analysisResult.lowestPrice ||
+      !analysisResult.storeId ||
+      !analysisResult.sourceIconUrl
+    ) {
       throw new Error("Invalid analysis result")
     }
 
@@ -82,7 +105,11 @@ export async function POST(req: Request) {
     console.error("Error in search-product API:", error)
     console.error("Error stack:", error.stack)
     return NextResponse.json(
-      { message: "An error occurred while processing your request", error: error.message },
+      {
+        message: "An error occurred while processing your request",
+        error: error.message,
+        stack: error.stack,
+      },
       { status: 500 },
     )
   }

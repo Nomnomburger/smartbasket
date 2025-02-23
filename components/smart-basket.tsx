@@ -3,7 +3,7 @@
 import { motion, AnimatePresence } from "framer-motion"
 import { X, Share2, ShoppingBasket, Plus, Search, Store, List, Minimize2, Bus } from "lucide-react"
 import Image from "next/image"
-import { useEffect, useState } from "react"
+import { useEffect, useState, useMemo, useCallback } from "react"
 import type { ShoppingItem } from "@/lib/firebase"
 import { useAuthState } from "react-firebase-hooks/auth"
 import { auth } from "@/lib/firebase"
@@ -31,22 +31,10 @@ export function SmartBasket({ onClose, onProductClick, shoppingItems, onItemChec
   const [storesWithCounts, setStoresWithCounts] = useState<{ [storeId: string]: number }>({})
   const [isNewItemModalOpen, setIsNewItemModalOpen] = useState(false)
 
-  const validShoppingItems = shoppingItems.filter((item) => item.price && item.storeId)
+  const validShoppingItems = useMemo(() => shoppingItems.filter((item) => item.price && item.storeId), [shoppingItems])
 
-  useEffect(() => {
-    document.body.style.overflow = "hidden"
-    updateStoreCounts(validShoppingItems)
-    return () => {
-      document.body.style.overflow = "unset"
-    }
-  }, [validShoppingItems])
-
-  useEffect(() => {
-    localStorage.setItem("smartBasketViewMode", viewMode)
-  }, [viewMode])
-
-  const updateStoreCounts = (items: ShoppingItem[]) => {
-    const counts = items.reduce(
+  const updateStoreCounts = useCallback((items: ShoppingItem[]) => {
+    return items.reduce(
       (acc, item) => {
         if (!item.checked) {
           acc[item.storeId] = (acc[item.storeId] || 0) + 1
@@ -55,20 +43,34 @@ export function SmartBasket({ onClose, onProductClick, shoppingItems, onItemChec
       },
       {} as { [storeId: string]: number },
     )
-    setStoresWithCounts(counts)
-  }
+  }, [])
 
-  const toggleItemCheck = (itemId: string) => {
-    const item = validShoppingItems.find((item) => item.id === itemId)
-    if (item) {
-      onItemCheck(itemId, !item.checked)
+  useEffect(() => {
+    document.body.style.overflow = "hidden"
+    setStoresWithCounts(updateStoreCounts(validShoppingItems))
+    return () => {
+      document.body.style.overflow = "unset"
     }
-  }
+  }, [validShoppingItems, updateStoreCounts])
 
-  const uncheckedItems = validShoppingItems.filter((item) => !item.checked)
-  const checkedItems = validShoppingItems.filter((item) => item.checked)
+  useEffect(() => {
+    localStorage.setItem("smartBasketViewMode", viewMode)
+  }, [viewMode])
+
+  const toggleItemCheck = useCallback(
+    (itemId: string) => {
+      const item = validShoppingItems.find((item) => item.id === itemId)
+      if (item) {
+        onItemCheck(itemId, !item.checked)
+      }
+    },
+    [validShoppingItems, onItemCheck],
+  )
+
+  const uncheckedItems = useMemo(() => validShoppingItems.filter((item) => !item.checked), [validShoppingItems])
+  const checkedItems = useMemo(() => validShoppingItems.filter((item) => item.checked), [validShoppingItems])
   const totalUncheckedItems = uncheckedItems.length
-  const onSaleItems = uncheckedItems.filter((item) => item.onSale).length
+  const onSaleItems = useMemo(() => uncheckedItems.filter((item) => item.onSale).length, [uncheckedItems])
 
   return (
     <motion.div
@@ -241,28 +243,43 @@ export function SmartBasket({ onClose, onProductClick, shoppingItems, onItemChec
                     exit={{ opacity: 0 }}
                     className="grid grid-cols-2 gap-1"
                   >
-                    {Object.entries(storesWithCounts).map(([storeId, count]) => (
-                      <div
-                        key={storeId}
-                        className="bg-white rounded-[20px] p-4 cursor-pointer"
-                        onClick={() => setSelectedStore(storeId)}
-                      >
-                        <div className="mb-8">
-                          <h3 className="text-base font-medium">{storeId}</h3>
-                          <p className="text-sm text-gray-600">2km away</p>
+                    {Object.entries(storesWithCounts).map(([storeId, count]) => {
+                      const storeItem = validShoppingItems.find((item) => item.storeId === storeId)
+                      return (
+                        <div
+                          key={storeId}
+                          className="bg-white rounded-[20px] p-4 cursor-pointer"
+                          onClick={() => setSelectedStore(storeId)}
+                        >
+                          <div className="mb-8">
+                            <h3 className="text-base font-medium">{storeId}</h3>
+                            <p className="text-sm text-gray-600">2km away</p>
+                          </div>
+                          <div className="flex items-center justify-between">
+                            <span className="text-base">{count} items</span>
+                            <div className="relative w-[42px] h-[42px] rounded-full bg-gray-200 overflow-hidden">
+                              {storeItem && storeItem.sourceIconUrl ? (
+                                <Image
+                                  src={storeItem.sourceIconUrl || "/placeholder.svg"}
+                                  alt={`${storeId} logo`}
+                                  width={42}
+                                  height={42}
+                                  className="rounded-full object-cover"
+                                />
+                              ) : (
+                                <Image
+                                  src="/placeholder.svg?height=42&width=42"
+                                  alt={`${storeId} logo`}
+                                  width={42}
+                                  height={42}
+                                  className="rounded-full"
+                                />
+                              )}
+                            </div>
+                          </div>
                         </div>
-                        <div className="flex items-center justify-between">
-                          <span className="text-base">{count} items</span>
-                          <Image
-                            src="/placeholder.svg?height=40&width=40"
-                            alt={`${storeId} logo`}
-                            width={40}
-                            height={40}
-                            className="rounded-full"
-                          />
-                        </div>
-                      </div>
-                    ))}
+                      )
+                    })}
                   </motion.div>
                 ) : (
                   <>

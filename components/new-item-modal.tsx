@@ -40,8 +40,8 @@ export function NewItemModal({ isOpen, onClose, onAdd }: NewItemModalProps) {
         })
 
         if (!response.ok) {
-          const errorText = await response.text()
-          throw new Error(`Failed to fetch product info: ${response.statusText}. Error: ${errorText}`)
+          const errorData = await response.json()
+          throw new Error(`Failed to fetch product info: ${response.statusText}. Error: ${JSON.stringify(errorData)}`)
         }
 
         const productInfo = await response.json()
@@ -55,6 +55,7 @@ export function NewItemModal({ isOpen, onClose, onAdd }: NewItemModalProps) {
           onSale: false,
           storeId: productInfo.storeId || "Unknown",
           price: productInfo.lowestPrice || "0.00",
+          sourceIconUrl: productInfo.sourceIconUrl || "",
           addedAt: new Date().toISOString(),
         })
 
